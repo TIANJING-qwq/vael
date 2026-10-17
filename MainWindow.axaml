@@ -8,11 +8,10 @@
         Icon="/Assets/app.ico"
         Width="1100" Height="720"
         MinWidth="800" MinHeight="560"
-        SystemDecorations="None"
         CanResize="True"
         TransparencyLevelHint="Mica"
-        Background="Transparent"
-        TransparencyBackgroundFallback="#F3F3F3">
+        Background="#CC202020"
+        TransparencyBackgroundFallback="#FF202020">
 
     <Window.Transitions>
         <Transitions>
@@ -24,7 +23,7 @@
         </Transitions>
     </Window.Transitions>
 
-    <Grid x:Name="RootGrid" RowDefinitions="40,*">
+    <Grid x:Name="RootGrid">
         <Grid.Transitions>
             <Transitions>
                 <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.45">
@@ -35,84 +34,13 @@
             </Transitions>
         </Grid.Transitions>
 
-        <!-- ============ 自定义标题栏 ============ -->
-        <Border Grid.Row="0"
-                Background="Transparent"
-                PointerPressed="TitleBar_PointerPressed"
-                ZIndex="20">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
-
-                <!-- 图标 -->
-                <Image Grid.Column="0"
-                       Source="/Assets/app.png"
-                       Width="20" Height="20"
-                       Margin="12,0,0,0"
-                       VerticalAlignment="Center" />
-
-                <!-- 返回按钮 -->
-                <Button Grid.Column="1"
-                        Content="←"
-                        Width="38" Height="30"
-                        Margin="6,0,0,0"
-                        Padding="0"
-                        VerticalAlignment="Center"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        FontSize="16"
-                        ToolTip.Tip="返回"
-                        Click="BackButton_Click" />
-
-                <!-- 标题 -->
-                <TextBlock Grid.Column="2"
-                           Text="Vael"
-                           FontSize="13"
-                           Opacity="0.7"
-                           VerticalAlignment="Center"
-                           Margin="8,0,0,0"
-                           IsHitTestVisible="False" />
-
-                <!-- 最小化 -->
-                <Button Grid.Column="3"
-                        Content="─"
-                        Width="40" Height="30"
-                        Padding="0"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        FontSize="14"
-                        ToolTip.Tip="最小化"
-                        Click="MinimizeButton_Click" />
-
-                <!-- 最大化/还原 -->
-                <Button Grid.Column="4"
-                        x:Name="MaximizeButton"
-                        Content="□"
-                        Width="40" Height="30"
-                        Padding="0"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        FontSize="13"
-                        ToolTip.Tip="最大化"
-                        Click="MaximizeButton_Click" />
-
-                <!-- 关闭 -->
-                <Button Grid.Column="5"
-                        Content="✕"
-                        Width="40" Height="30"
-                        Padding="0"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        FontSize="13"
-                        ToolTip.Tip="关闭"
-                        Click="CloseButton_Click" />
-            </Grid>
-        </Border>
-
         <!-- ============ 主内容 ============ -->
-        <Grid Grid.Row="1">
+        <Grid>
             <fluent:NavigationView x:Name="NavView"
                                    PaneDisplayMode="Left"
                                    IsSettingsVisible="False"
-                                   IsBackButtonVisible="False"
+                                   IsBackButtonVisible="True"
+                                   BackRequested="NavView_BackRequested"
                                    Background="Transparent"
                                    SelectionChanged="NavView_SelectionChanged">
 

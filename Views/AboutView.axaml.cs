@@ -21,12 +21,10 @@ public partial class AboutView : UserControl
     private const string GitHubUrl = "https://github.com/TIANJING-qwq/Vael";
 
     private readonly List<Control> _fadeTargets = new();
-    private readonly List<string> _titleStages = new() { "V", "Va", "Vae", "Vael" };
 
     private readonly Dictionary<string, double> _targetOpacity = new()
     {
         ["AppIcon"]           = 1.0,
-        ["TitleText"]         = 1.0,
         ["ChineseName"]       = 0.85,
         ["Divider"]           = 1.0,
         ["LineAuthor"]        = 1.0,
@@ -64,7 +62,7 @@ public partial class AboutView : UserControl
 
         _fadeTargets.AddRange(new Control[]
         {
-            AppIcon, TitleText, ChineseName, Divider,
+            AppIcon, ChineseName, Divider,
             LineAuthor, LineTeam, LineBuild, LineVersion, LineDesc,
             CreditsSection, ButtonRow
         });
@@ -86,6 +84,30 @@ public partial class AboutView : UserControl
                 {
                     Property = RenderTransformProperty,
                     Duration = TimeSpan.FromMilliseconds(600),
+                    Easing = new QuinticEaseOut()
+                }
+            };
+        }
+
+        // 标题字母：初始在下方且透明，随后从左往右依次上浮
+        for (int i = 0; i < 4; i++)
+        {
+            var letter = this.FindControl<TextBlock>($"Letter{i}");
+            if (letter == null) continue;
+            letter.Opacity = 0;
+            letter.RenderTransform = TransformOperations.Parse("translateY(30px)");
+            letter.Transitions = new Transitions
+            {
+                new DoubleTransition
+                {
+                    Property = OpacityProperty,
+                    Duration = TimeSpan.FromMilliseconds(450),
+                    Easing = new CubicEaseOut()
+                },
+                new TransformOperationsTransition
+                {
+                    Property = RenderTransformProperty,
+                    Duration = TimeSpan.FromMilliseconds(500),
                     Easing = new QuinticEaseOut()
                 }
             };
@@ -120,6 +142,13 @@ public partial class AboutView : UserControl
             {
                 var bmp = TryLoadImage("deep.jpg", "deep.png", "Deep.jpg");
                 if (bmp != null) deep.Source = bmp;
+            }
+
+            var shinecy = this.FindControl<Image>("ShinecyImage");
+            if (shinecy != null)
+            {
+                var bmp = TryLoadImage("x.jpg", "x.png", "shinecy.jpg");
+                if (bmp != null) shinecy.Source = bmp;
             }
         }
         catch (Exception ex)
@@ -180,14 +209,14 @@ public partial class AboutView : UserControl
         Fade(AppIcon);
         await Task.Delay(400);
 
-        TitleText.Text = "VL";
-        Fade(TitleText);
-        await Task.Delay(500);
-
-        for (int i = 0; i < _titleStages.Count; i++)
+        // 标题字母从左往右依次上浮
+        for (int i = 0; i < 4; i++)
         {
-            TitleText.Text = _titleStages[i];
-            await Task.Delay(120);
+            var letter = this.FindControl<TextBlock>($"Letter{i}");
+            if (letter == null) continue;
+            letter.Opacity = 1;
+            letter.RenderTransform = TransformOperations.Parse("translateY(0px)");
+            await Task.Delay(90);
         }
 
         Fade(ChineseName);

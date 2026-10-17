@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using SBtools.Services;
@@ -14,6 +15,7 @@ namespace SBtools.Views;
 public partial class FeaturesView : UserControl
 {
     private string? _mountedDriveLetter;
+    private int _dailyQuoteIndex = -1;
 
     private static readonly string[] _dailyQuotes =
     {
@@ -44,8 +46,19 @@ public partial class FeaturesView : UserControl
     {
         try
         {
-            var day = DateTime.Now.DayOfYear;
-            DailyQuoteText.Text = _dailyQuotes[day % _dailyQuotes.Length];
+            if (_dailyQuoteIndex < 0)
+                _dailyQuoteIndex = DateTime.Now.DayOfYear % _dailyQuotes.Length;
+            DailyQuoteText.Text = _dailyQuotes[_dailyQuoteIndex];
+        }
+        catch { }
+    }
+
+    private void DailyQuoteCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        try
+        {
+            _dailyQuoteIndex = (_dailyQuoteIndex + 1) % _dailyQuotes.Length;
+            DailyQuoteText.Text = _dailyQuotes[_dailyQuoteIndex];
         }
         catch { }
     }

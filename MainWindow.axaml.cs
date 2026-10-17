@@ -42,13 +42,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         _instance = this;
 
-        // 最大化/还原时更新标题栏按钮图标
-        PropertyChanged += (_, e) =>
-        {
-            if (e.Property == WindowStateProperty)
-                MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
-        };
-
         WindowBackdropService.Apply(this, ConfigManager.Instance.WindowBackdrop);
 
         if (startMinimized)
@@ -87,6 +80,9 @@ public partial class MainWindow : Window
 
         Opened += async (_, _) =>
         {
+            // 窗口已显示、句柄可用时，重新应用一次背景材质（确保 DWM 属性生效）
+            WindowBackdropService.Apply(this, ConfigManager.Instance.WindowBackdrop);
+
             if (!startMinimized || !_windowShown)
             {
                 _windowShown = true;
@@ -230,27 +226,9 @@ public partial class MainWindow : Window
     }
 
     // ============================================================
-    // 自定义标题栏
+    // 导航返回（NavigationView 自带返回按钮）
     // ============================================================
-    private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        try
-        {
-            // 点击标题栏上的按钮时不触发窗口拖拽
-            StyledElement? el = e.Source as StyledElement;
-            while (el != null)
-            {
-                if (el is Button) return;
-                el = el.Parent;
-            }
-
-            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-                BeginMoveDrag(e);
-        }
-        catch { }
-    }
-
-    private void BackButton_Click(object? sender, RoutedEventArgs e)
+    private void NavView_BackRequested(object? sender, NavigationViewBackRequestedEventArgs e)
     {
         try
         {
@@ -261,19 +239,6 @@ public partial class MainWindow : Window
         }
         catch { }
     }
-
-    private void MinimizeButton_Click(object? sender, RoutedEventArgs e)
-        => WindowState = WindowState.Minimized;
-
-    private void MaximizeButton_Click(object? sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState == WindowState.Maximized
-            ? WindowState.Normal
-            : WindowState.Maximized;
-    }
-
-    private void CloseButton_Click(object? sender, RoutedEventArgs e)
-        => Close();
 
     // ============================================================
     // 网络监控

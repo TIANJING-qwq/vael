@@ -14,13 +14,15 @@
                    HorizontalAlignment="Center"
                    Opacity="0" />
 
-            <TextBlock Name="TitleText"
-                       Text="VL"
-                       FontSize="42"
-                       FontWeight="Bold"
-                       Foreground="#0067c0"
-                       HorizontalAlignment="Center"
-                       Opacity="0" />
+            <StackPanel Name="TitlePanel"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="2">
+                <TextBlock Name="Letter0" Text="V" FontSize="42" FontWeight="Bold" Foreground="#0067c0"/>
+                <TextBlock Name="Letter1" Text="a" FontSize="42" FontWeight="Bold" Foreground="#5A5FD0"/>
+                <TextBlock Name="Letter2" Text="e" FontSize="42" FontWeight="Bold" Foreground="#7B3FF2"/>
+                <TextBlock Name="Letter3" Text="l" FontSize="42" FontWeight="Bold" Foreground="#00B7C3"/>
+            </StackPanel>
 
             <TextBlock Name="ChineseName"
                        Text="Vael"
@@ -115,6 +117,24 @@
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center"/>
                             <TextBlock Text="蓝色大肥鱼"
+                                       FontSize="11"
+                                       Opacity="0.55"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- shinecy -->
+                        <StackPanel Spacing="8" HorizontalAlignment="Center">
+                            <Border Width="72" Height="72"
+                                    CornerRadius="36"
+                                    ClipToBounds="True"
+                                    HorizontalAlignment="Center">
+                                <Image x:Name="ShinecyImage" Stretch="UniformToFill"/>
+                            </Border>
+                            <TextBlock Text="shinecy"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="股东"
                                        FontSize="11"
                                        Opacity="0.55"
                                        HorizontalAlignment="Center"/>

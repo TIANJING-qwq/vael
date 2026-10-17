@@ -104,14 +104,16 @@
                     </Grid>
                 </Button>
 
-                <!-- 每日一言 -->
+                <!-- 每日一言（点击换一句） -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="10"
-                        Padding="20">
+                        Padding="20"
+                        Cursor="Hand"
+                        PointerPressed="DailyQuoteCard_PointerPressed">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="每日一言" FontSize="14" FontWeight="SemiBold" Opacity="0.7" />
+                        <TextBlock Text="每日一言 · 点击换一句" FontSize="14" FontWeight="SemiBold" Opacity="0.7" />
                         <TextBlock x:Name="DailyQuoteText"
                                    FontSize="14"
                                    TextWrapping="Wrap"

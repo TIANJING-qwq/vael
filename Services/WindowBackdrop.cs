@@ -32,15 +32,15 @@ public static class WindowBackdropService
             switch (mode)
             {
                 case "Acrylic":
-                    window.TransparencyBackgroundFallback = new SolidColorBrush(solidColor);
+                    window.TransparencyBackgroundFallback = new SolidColorBrush(Color.Parse("#FF2A2128"));
                     window.TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur };
-                    window.Background = new SolidColorBrush(Color.Parse("#01000000"));
+                    window.Background = new SolidColorBrush(Color.Parse("#CC2A2128"));
                     break;
 
                 case "Mica":
-                    window.TransparencyBackgroundFallback = new SolidColorBrush(solidColor);
+                    window.TransparencyBackgroundFallback = new SolidColorBrush(Color.Parse("#FF20242C"));
                     window.TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica };
-                    window.Background = new SolidColorBrush(Color.Parse("#01000000"));
+                    window.Background = new SolidColorBrush(Color.Parse("#CC20242C"));
                     break;
 
                 case "None":
