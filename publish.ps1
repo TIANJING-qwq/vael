@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Vael 一键打包发布脚本
 .DESCRIPTION
@@ -220,19 +220,19 @@ if ($SkipPublish) {
     Write-Host "`n  即将上传以下资产：" -ForegroundColor White
     foreach ($a in $assets) {
         $size = [math]::Round((Get-Item $a).Length / 1MB, 1)
-        Write-Host "    - $(Split-Path $a -Leaf) ($size MB)" -ForegroundColor Gray
+        Write-Host ("    - {0} ({1} MB)" -f (Split-Path $a -Leaf), $size) -ForegroundColor Gray
     }
 
     $tagExists = $false
     try {
-        gh release view $Tag --repo "$RepoOwner/$RepoName" 2>$null | Out-Null
+        gh release view $Tag --repo "${RepoOwner}/${RepoName}" 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { $tagExists = $true }
     } catch { }
 
     if ($tagExists) {
         Write-Warn "Release $Tag 已存在，将覆盖上传同名资产"
         foreach ($a in $assets) {
-            gh release upload $Tag $a --repo "$RepoOwner/$RepoName" --clobber
+            gh release upload $Tag $a --repo "${RepoOwner}/${RepoName}" --clobber
             Write-Ok "已上传: $(Split-Path $a -Leaf)"
         }
     } else {
@@ -241,7 +241,7 @@ if ($SkipPublish) {
         $Notes | Set-Content $notesFile -Encoding UTF8
 
         gh release create $Tag `
-            --repo "$RepoOwner/$RepoName" `
+            --repo "${RepoOwner}/${RepoName}" `
             --title "Vael $Tag" `
             --notes-file $notesFile `
             --latest `
@@ -293,6 +293,6 @@ Write-Host "  发布完成！" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Green
 if (-not $SkipPublish) {
     Write-Host ""
-    Write-Host "  Release 页面: https://github.com/$RepoOwner/$RepoName/releases/tag/$Tag" -ForegroundColor White
+    Write-Host "  Release 页面: https://github.com/${RepoOwner}/${RepoName}/releases/tag/$Tag" -ForegroundColor White
 }
 Write-Host ""
