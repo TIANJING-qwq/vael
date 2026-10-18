@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Media.Transformation;
@@ -251,6 +252,77 @@ public partial class AboutView : UserControl
         if (c.Name != null && _targetOpacity.TryGetValue(c.Name, out var v))
             return v;
         return 1.0;
+    }
+
+    // ============================================================
+    // 彩蛋：头像交互
+    // ============================================================
+    private void TianjingAvatar_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        try
+        {
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+            Process.Start(new ProcessStartInfo("https://github.com/TIANJING-qwq")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch { }
+    }
+
+    private bool _ricePlaying;
+
+    private async void DeepseekAvatar_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_ricePlaying) return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        _ricePlaying = true;
+        try
+        {
+            var deepPos = DeepImage.TranslatePoint(new Point(0, 0), EggCanvas) ?? new Point(0, 0);
+            var shinecyPos = ShinecyImage.TranslatePoint(new Point(0, 0), EggCanvas) ?? new Point(0, 0);
+
+            // 气泡：放在 deepseek 头像正上方
+            Canvas.SetLeft(RiceBubble, deepPos.X + 36 - 60);
+            Canvas.SetTop(RiceBubble, deepPos.Y - 44);
+            RiceBubble.Opacity = 1;
+
+            // 白饭：从 shinecy 头像飞向 deepseek 头像
+            double sx = shinecyPos.X + 36 - 15;
+            double sy = shinecyPos.Y + 36 - 15;
+            double dx = deepPos.X + 36 - 15;
+            double dy = deepPos.Y + 36 - 15;
+
+            Canvas.SetLeft(RiceBowl, sx);
+            Canvas.SetTop(RiceBowl, sy);
+            RiceBowl.RenderTransform = TransformOperations.Parse("translate(0px, 0px)");
+            RiceBowl.Transitions = new Transitions
+            {
+                new TransformOperationsTransition
+                {
+                    Property = RenderTransformProperty,
+                    Duration = TimeSpan.FromMilliseconds(650),
+                    Easing = new CubicEaseOut(),
+                },
+            };
+            RiceBowl.Opacity = 1;
+
+            await Task.Delay(60);
+            RiceBowl.RenderTransform =
+                TransformOperations.Parse($"translate({dx - sx}px, {dy - sy}px)");
+
+            await Task.Delay(720);
+            RiceBowl.Opacity = 0;
+
+            await Task.Delay(1500);
+            RiceBubble.Opacity = 0;
+        }
+        catch { }
+        finally
+        {
+            _ricePlaying = false;
+        }
     }
 
     // ============================================================

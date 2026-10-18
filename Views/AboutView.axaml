@@ -82,6 +82,7 @@
                                Opacity="0.7"
                                HorizontalAlignment="Center"/>
 
+                    <Grid>
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Center"
                                 Spacing="36">
@@ -91,7 +92,9 @@
                             <Border Width="72" Height="72"
                                     CornerRadius="36"
                                     ClipToBounds="True"
-                                    HorizontalAlignment="Center">
+                                    HorizontalAlignment="Center"
+                                    Cursor="Hand"
+                                    PointerPressed="TianjingAvatar_PointerPressed">
                                 <Image x:Name="TJImage" Stretch="UniformToFill"/>
                             </Border>
                             <TextBlock Text="TIANJING"
@@ -109,7 +112,9 @@
                             <Border Width="72" Height="72"
                                     CornerRadius="36"
                                     ClipToBounds="True"
-                                    HorizontalAlignment="Center">
+                                    HorizontalAlignment="Center"
+                                    Cursor="Hand"
+                                    PointerPressed="DeepseekAvatar_PointerPressed">
                                 <Image x:Name="DeepImage" Stretch="UniformToFill"/>
                             </Border>
                             <TextBlock Text="deepseek"
@@ -140,6 +145,24 @@
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
+
+                        <!-- 彩蛋：气泡 + 白饭 -->
+                        <Canvas x:Name="EggCanvas" IsHitTestVisible="False">
+                            <Border x:Name="RiceBubble"
+                                    Background="#EE2D2D2D"
+                                    CornerRadius="10"
+                                    Padding="10,6"
+                                    Opacity="0">
+                                <TextBlock Text="我要吃白饭"
+                                           FontSize="12"
+                                           Foreground="White"/>
+                            </Border>
+                            <TextBlock x:Name="RiceBowl"
+                                       Text="🍚"
+                                       FontSize="30"
+                                       Opacity="0"/>
+                        </Canvas>
+                    </Grid>
                 </StackPanel>
             </Border>
 
