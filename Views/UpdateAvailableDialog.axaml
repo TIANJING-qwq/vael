@@ -18,7 +18,8 @@
             BorderThickness="1"
             CornerRadius="12"
             Padding="28"
-            Margin="1">
+            Margin="1"
+            PointerPressed="RootCard_PointerPressed">
 
         <Border.Transitions>
             <Transitions>
@@ -50,12 +51,9 @@
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
                     CornerRadius="8"
                     Padding="14"
-                    MaxHeight="220">
+                    MaxHeight="260">
                 <ScrollViewer>
-                    <TextBlock x:Name="ChangelogText"
-                               FontSize="12"
-                               TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ContentControl x:Name="ChangelogHost"/>
                 </ScrollViewer>
             </Border>
 

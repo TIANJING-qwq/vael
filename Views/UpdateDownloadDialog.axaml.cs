@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
@@ -61,6 +62,23 @@ public partial class UpdateDownloadDialog : Window
         await Task.Delay(220);
         _allowClose = true;
         Close();
+    }
+
+    private void RootCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        try
+        {
+            Avalonia.StyledElement? el = e.Source as Avalonia.StyledElement;
+            while (el != null)
+            {
+                if (el is Button) return;
+                el = el.Parent;
+            }
+
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                BeginMoveDrag(e);
+        }
+        catch { }
     }
 
     private void OnProgressChanged(int percent)

@@ -8,10 +8,9 @@
         Icon="/Assets/app.ico"
         Width="1100" Height="720"
         MinWidth="800" MinHeight="560"
-        CanResize="True"
         TransparencyLevelHint="Mica"
-        Background="#CC202020"
-        TransparencyBackgroundFallback="#FF202020">
+        Background="Transparent"
+        TransparencyBackgroundFallback="#F3F3F3">
 
     <Window.Transitions>
         <Transitions>
@@ -34,80 +33,77 @@
             </Transitions>
         </Grid.Transitions>
 
-        <!-- ============ 主内容 ============ -->
-        <Grid>
-            <fluent:NavigationView x:Name="NavView"
-                                   PaneDisplayMode="Left"
-                                   IsSettingsVisible="False"
-                                   IsBackButtonVisible="True"
-                                   BackRequested="NavView_BackRequested"
-                                   Background="Transparent"
-                                   SelectionChanged="NavView_SelectionChanged">
+        <fluent:NavigationView x:Name="NavView"
+                               PaneDisplayMode="Left"
+                               IsSettingsVisible="False"
+                               IsBackButtonVisible="True"
+                               BackRequested="NavView_BackRequested"
+                               Background="Transparent"
+                               SelectionChanged="NavView_SelectionChanged">
 
-                <fluent:NavigationView.MenuItems>
-                    <fluent:NavigationViewItem Content="功能" Tag="features">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Home" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+            <fluent:NavigationView.MenuItems>
+                <fluent:NavigationViewItem Content="功能" Tag="features">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Home" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="网络" Tag="network">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Globe" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="网络" Tag="network">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Globe" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="系统优化" Tag="optimization">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Repair" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="系统优化" Tag="optimization">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Repair" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="实验室" Tag="lab">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Repair" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="实验室" Tag="lab">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Repair" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="涩图合集" Tag="gallery">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Camera" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="涩图合集" Tag="gallery">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Camera" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="插件" Tag="plugins">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="AllApps" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="插件" Tag="plugins">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="AllApps" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItemSeparator />
+                <fluent:NavigationViewItemSeparator />
 
-                    <fluent:NavigationViewItem Content="设置" Tag="settings">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Setting" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
+                <fluent:NavigationViewItem Content="设置" Tag="settings">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Setting" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
 
-                    <fluent:NavigationViewItem Content="关于" Tag="about">
-                        <fluent:NavigationViewItem.IconSource>
-                            <fluent:SymbolIconSource Symbol="Help" />
-                        </fluent:NavigationViewItem.IconSource>
-                    </fluent:NavigationViewItem>
-                </fluent:NavigationView.MenuItems>
+                <fluent:NavigationViewItem Content="关于" Tag="about">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Help" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
+            </fluent:NavigationView.MenuItems>
 
-                <fluent:Frame x:Name="ContentFrame"
-                              Background="Transparent" />
-            </fluent:NavigationView>
+            <fluent:Frame x:Name="ContentFrame"
+                          Background="Transparent" />
+        </fluent:NavigationView>
 
-            <controls:ToastHost Name="GlobalToastHost"
-                                Width="320"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Stretch"
-                                Margin="0,20,20,20"
-                                StackedVisible="32"
-                                IsHitTestVisible="True"
-                                ClipToBounds="True" />
-        </Grid>
+        <controls:ToastHost Name="GlobalToastHost"
+                            Width="320"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch"
+                            Margin="0,20,20,20"
+                            StackedVisible="32"
+                            IsHitTestVisible="True"
+                            ClipToBounds="True" />
     </Grid>
 </Window>

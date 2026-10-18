@@ -12,7 +12,7 @@
         <Border Grid.Row="0"
                 Background="#CC000000"
                 Padding="14,10">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock x:Name="NameText"
                            Foreground="White"
                            FontSize="13"
@@ -20,16 +20,27 @@
                            TextTrimming="CharacterEllipsis"
                            Margin="0,0,12,0"/>
                 <Button Grid.Column="1"
+                        Content="重置"
+                        Padding="14,6"
+                        Margin="0,0,8,0"
+                        Click="Reset_Click"/>
+                <Button Grid.Column="2"
                         Content="关闭"
                         Padding="16,6"
                         Click="Close_Click"/>
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Background="#F0000000">
+        <Border Grid.Row="1"
+                Background="#F0000000"
+                PointerWheelChanged="OnWheel"
+                PointerPressed="OnPointerPressed"
+                PointerMoved="OnPointerMoved"
+                PointerReleased="OnPointerReleased">
             <Image x:Name="MainImage"
                    Stretch="Uniform"
-                   Margin="16"/>
+                   Margin="16"
+                   RenderTransformOrigin="0.5,0.5"/>
         </Border>
     </Grid>
 </Window>

@@ -1,6 +1,8 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
+using SBtools.Controls;
 using System;
 using System.Threading.Tasks;
 
@@ -22,7 +24,7 @@ public partial class UpdateAvailableDialog : Window
 
         TitleText.Text = title;
         VersionText.Text = $"最新版本：{version}";
-        ChangelogText.Text = changelog;
+        ChangelogHost.Content = MarkdownRenderer.Render(changelog);
         DownloadButton.Content = confirmText;
 
         RootCard.Opacity = 0;
@@ -50,6 +52,24 @@ public partial class UpdateAvailableDialog : Window
             _allowClose = true;
             Close();
         };
+    }
+
+    private void RootCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        try
+        {
+            // 点击按钮时不触发窗口拖动
+            Avalonia.StyledElement? el = e.Source as Avalonia.StyledElement;
+            while (el != null)
+            {
+                if (el is Button) return;
+                el = el.Parent;
+            }
+
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                BeginMoveDrag(e);
+        }
+        catch { }
     }
 
     private async void LaterButton_Click(object? sender, RoutedEventArgs e)

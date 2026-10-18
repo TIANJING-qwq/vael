@@ -190,11 +190,6 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            // ★ 老硬件/受限环境：强制软件渲染，跳过 ANGLE/D3D11（避免旧 iGPU 驱动崩溃 0xc000001d）
-            .With(new Win32PlatformOptions
-            {
-                RenderingMode = new[] { Win32RenderingMode.Software }
-            })
             .WithInterFont()
             .LogToTrace();
 

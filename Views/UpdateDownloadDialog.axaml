@@ -18,7 +18,8 @@
             BorderThickness="1"
             CornerRadius="12"
             Padding="28"
-            Margin="1">
+            Margin="1"
+            PointerPressed="RootCard_PointerPressed">
 
         <Border.Transitions>
             <Transitions>

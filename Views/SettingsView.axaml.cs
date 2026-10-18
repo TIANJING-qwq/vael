@@ -546,7 +546,7 @@ public partial class SettingsView : UserControl
                     (mode == "Mica" || mode == "Acrylic"))
                 {
                     MainWindow.PushToast("窗口材质",
-                        "浅色模式下云母/亚克力不可用，已回退到不透明背景");
+                        "云母/亚克力需要 Win11 + 深色模式，已回退到不透明背景");
                 }
 
                 WindowBackdropService.Apply(main, mode);
