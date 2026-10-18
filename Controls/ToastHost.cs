@@ -133,7 +133,7 @@ public class ToastHost : Panel
             {
                 Property = TranslateTransform.YProperty,
                 Duration = TimeSpan.FromMilliseconds(420),
-                Easing = new CubicEaseOut()
+                Easing = new ExponentialEaseOut()
             }
         };
         c.RenderTransform = tt;

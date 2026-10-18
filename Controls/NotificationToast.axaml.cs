@@ -49,13 +49,14 @@ public partial class NotificationToast : UserControl
             {
                 Property = OpacityProperty,
                 Duration = TimeSpan.FromMilliseconds(FadeDurationMs),
-                Easing = new CubicEaseOut()
+                Easing = new ExponentialEaseOut()
             },
             new TransformOperationsTransition
             {
                 Property = RenderTransformProperty,
                 Duration = TimeSpan.FromMilliseconds(EnterDurationMs),
-                Easing = new QuinticEaseOut()
+                // 用无过冲的缓动，避免通知向左弹时溢出到内容区
+                Easing = new ExponentialEaseOut()
             }
         };
     }

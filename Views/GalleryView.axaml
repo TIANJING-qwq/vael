@@ -2,7 +2,30 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:svc="using:SBtools.Models"
              xmlns:fluent="using:FluentAvalonia.UI.Controls"
+             xmlns:ea="using:Avalonia.Animation.Easings"
              x:Class="SBtools.Views.GalleryView">
+
+    <UserControl.Styles>
+        <!-- 图片项：悬停放大 + 按下回弹（触摸反馈） -->
+        <Style Selector="Border.galleryItem">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2">
+                        <TransformOperationsTransition.Easing>
+                            <ea:BackEaseOut/>
+                        </TransformOperationsTransition.Easing>
+                    </TransformOperationsTransition>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.galleryItem:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.03)"/>
+        </Style>
+        <Style Selector="Border.galleryItem:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+        </Style>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
 
@@ -55,6 +78,7 @@
                                     ClipToBounds="True"
                                     Background="#18000000"
                                     Cursor="Hand"
+                                    Classes="galleryItem"
                                     PointerPressed="ImageItem_PointerPressed">
                                 <Grid>
                                     <Image Source="{Binding Thumbnail}"

@@ -15,7 +15,7 @@ namespace SBtools.Views;
 ///
 /// 以高级动效的眼光做减法：去掉雷达弧、波纹、粒子、进度条等喧闹元素，
 /// 只保留三件事——图标轻轻落定、一道细环画满一圈（连接建立）、词标与一条细线浮现。
-/// 全程单一强调色、柔和留白、QuinticEaseOut 的干脆收束。
+/// 全程单一强调色、柔和留白、BackEaseOut 的干脆收束。
 /// </summary>
 public partial class SplashWindow : Window
 {
@@ -46,7 +46,7 @@ public partial class SplashWindow : Window
         Root.Opacity = 0;
         Root.Transitions = new Transitions
         {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(520), Easing = new CubicEaseOut() }
+            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(520), Easing = new ExponentialEaseOut() }
         };
 
         Glow.Transitions = FadeTransitions(900);
@@ -100,7 +100,7 @@ public partial class SplashWindow : Window
 
             inst.Root.Transitions = new Transitions
             {
-                new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(DismissMs), Easing = new CubicEaseOut() }
+                new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(DismissMs), Easing = new ExponentialEaseOut() }
             };
             inst.Root.Opacity = 0;
             await Task.Delay((int)DismissMs + 40);
@@ -210,7 +210,7 @@ public partial class SplashWindow : Window
     // ============================================================
     private static Transitions FadeTransitions(double ms) => new()
     {
-        new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(ms), Easing = new CubicEaseOut() }
+        new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(ms), Easing = new ExponentialEaseOut() }
     };
 
     private static void SetupFadeScale(Control c, string from, double fadeMs, double scaleMs)
@@ -220,8 +220,8 @@ public partial class SplashWindow : Window
         c.RenderTransform = TransformOperations.Parse(from);
         c.Transitions = new Transitions
         {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new CubicEaseOut() },
-            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(scaleMs), Easing = new QuinticEaseOut() }
+            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new ExponentialEaseOut() },
+            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(scaleMs), Easing = new BackEaseOut() }
         };
     }
 
@@ -231,8 +231,8 @@ public partial class SplashWindow : Window
         c.RenderTransform = TransformOperations.Parse(from);
         c.Transitions = new Transitions
         {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new CubicEaseOut() },
-            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(riseMs), Easing = new QuinticEaseOut() }
+            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new ExponentialEaseOut() },
+            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(riseMs), Easing = new BackEaseOut() }
         };
     }
 }

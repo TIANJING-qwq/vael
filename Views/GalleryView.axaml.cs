@@ -275,6 +275,8 @@ public partial class GalleryView : UserControl
 
     private void ImageItem_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        // ★ 双击（触摸为双击/双击手势）才打开大图，单击只做选中反馈
+        if (e.ClickCount < 2) return;
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
         if (sender is Control c && c.DataContext is GalleryItem item)
@@ -286,6 +288,7 @@ public partial class GalleryView : UserControl
 
                 var win = new ImageViewerWindow(item);
                 win.ShowDialog(owner);
+                e.Handled = true;
             }
             catch (Exception ex)
             {

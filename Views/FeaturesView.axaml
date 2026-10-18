@@ -1,6 +1,30 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ea="using:Avalonia.Animation.Easings"
              x:Class="SBtools.Views.FeaturesView">
+
+    <UserControl.Styles>
+        <!-- 功能卡片：悬停微缩放 + 按下回弹（非线性缓动） -->
+        <Style Selector="Button.card">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.24">
+                        <TransformOperationsTransition.Easing>
+                            <ea:BackEaseOut/>
+                        </TransformOperationsTransition.Easing>
+                    </TransformOperationsTransition>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.card:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.015)"/>
+        </Style>
+        <Style Selector="Button.card:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.985)"/>
+        </Style>
+    </UserControl.Styles>
+
     <Grid>
 
         <!-- ============ 主页 ============ -->
@@ -43,6 +67,7 @@
 
                 <!-- 播放 CCTV -->
                 <Button Click="PlayCctvButton_Click"
+                        Classes="card"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
                         Padding="0"
@@ -64,6 +89,7 @@
 
                 <!-- 校园网自动认证 -->
                 <Button Click="NetworkTile_Click"
+                        Classes="card"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
                         Padding="0"
@@ -85,6 +111,7 @@
 
                 <!-- Windows 11 升级 -->
                 <Button Click="Win11Tile_Click"
+                        Classes="card"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
                         Padding="0"

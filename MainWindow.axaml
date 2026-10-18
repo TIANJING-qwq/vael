@@ -16,7 +16,7 @@
         <Transitions>
             <DoubleTransition Property="Opacity" Duration="0:0:0.35">
                 <DoubleTransition.Easing>
-                    <ea:CubicEaseOut/>
+                    <ea:ExponentialEaseOut/>
                 </DoubleTransition.Easing>
             </DoubleTransition>
         </Transitions>
@@ -27,7 +27,7 @@
             <Transitions>
                 <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.45">
                     <TransformOperationsTransition.Easing>
-                        <ea:QuinticEaseOut/>
+                        <ea:BackEaseOut/>
                     </TransformOperationsTransition.Easing>
                 </TransformOperationsTransition>
             </Transitions>

@@ -79,13 +79,13 @@ public partial class AboutView : UserControl
                 {
                     Property = OpacityProperty,
                     Duration = TimeSpan.FromMilliseconds(500),
-                    Easing = new CubicEaseOut()
+                    Easing = new ExponentialEaseOut()
                 },
                 new TransformOperationsTransition
                 {
                     Property = RenderTransformProperty,
                     Duration = TimeSpan.FromMilliseconds(600),
-                    Easing = new QuinticEaseOut()
+                    Easing = new BackEaseOut()
                 }
             };
         }
@@ -103,13 +103,13 @@ public partial class AboutView : UserControl
                 {
                     Property = OpacityProperty,
                     Duration = TimeSpan.FromMilliseconds(450),
-                    Easing = new CubicEaseOut()
+                    Easing = new ExponentialEaseOut()
                 },
                 new TransformOperationsTransition
                 {
                     Property = RenderTransformProperty,
                     Duration = TimeSpan.FromMilliseconds(500),
-                    Easing = new QuinticEaseOut()
+                    Easing = new BackEaseOut()
                 }
             };
         }
@@ -303,7 +303,7 @@ public partial class AboutView : UserControl
                 {
                     Property = RenderTransformProperty,
                     Duration = TimeSpan.FromMilliseconds(650),
-                    Easing = new CubicEaseOut(),
+                    Easing = new ExponentialEaseOut(),
                 },
             };
             RiceBowl.Opacity = 1;
