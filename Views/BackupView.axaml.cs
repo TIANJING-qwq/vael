@@ -103,8 +103,8 @@ public partial class BackupView : UserControl
             Log($"正在备份 {name} …");
             try
             {
-                var (code, output) = await RunRobocopyAsync(src, dst);
-                // robocopy: 0-7 为成功，>=8 为失败
+                var (code, output) = await CopyFolderAsync(src, dst);
+                // robocopy: 0-7 为成功，>=8 为失败；托管复制成功返回 0
                 if (code < 8) { ok++; Log($"{name} 完成（退出码 {code}）"); }
                 else { fail++; Log($"{name} 失败（退出码 {code}）:{Truncate(output)}"); }
             }
@@ -119,23 +119,49 @@ public partial class BackupView : UserControl
         Log(StatusText.Text);
     }
 
-    private static async Task<(int code, string output)> RunRobocopyAsync(string src, string dst)
+    /// <summary>跨平台复制：Windows 用 robocopy，其它平台用托管递归复制。</summary>
+    private static async Task<(int code, string output)> CopyFolderAsync(string src, string dst)
     {
-        var psi = new ProcessStartInfo(
-            "robocopy",
-            $"\"{src}\" \"{dst}\" /E /R:1 /W:1 /NFL /NDL /NP /NJH")
+        if (OperatingSystem.IsWindows())
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        using var p = Process.Start(psi);
-        if (p == null) return (-1, "");
-        var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-        var error = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
-        await p.WaitForExitAsync().ConfigureAwait(false);
-        return (p.ExitCode, output + error);
+            var psi = new ProcessStartInfo(
+                "robocopy",
+                $"\"{src}\" \"{dst}\" /E /R:1 /W:1 /NFL /NDL /NP /NJH")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using var p = Process.Start(psi);
+            if (p == null) return (-1, "");
+            var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+            var error = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
+            await p.WaitForExitAsync().ConfigureAwait(false);
+            return (p.ExitCode, output + error);
+        }
+
+        try
+        {
+            await Task.Run(() => CopyDirectory(src, dst)).ConfigureAwait(false);
+            return (0, "");
+        }
+        catch (Exception ex)
+        {
+            return (8, ex.Message);
+        }
+    }
+
+    private static void CopyDirectory(string src, string dst)
+    {
+        Directory.CreateDirectory(dst);
+        foreach (var file in Directory.GetFiles(src, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(src, file);
+            var target = Path.Combine(dst, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: true);
+        }
     }
 
     private void OpenBackupDir_Click(object? sender, RoutedEventArgs e)

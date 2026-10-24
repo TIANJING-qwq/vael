@@ -324,6 +324,12 @@ public partial class SystemToolsView : UserControl
 
     private void WindowsRepair_Click(object? sender, RoutedEventArgs e)
     {
+        if (!PlatformInfo.CanUseSystemRepair)
+        {
+            Log("该功能仅支持 Windows");
+            return;
+        }
+
         if (!IsAdmin())
         {
             Log("Windows 修复需要管理员权限，请右键程序 → 以管理员身份运行");
@@ -351,6 +357,12 @@ public partial class SystemToolsView : UserControl
     // ============================================================
     private async void RefreshUpdates_Click(object? sender, RoutedEventArgs e)
     {
+        if (!PlatformInfo.CanUseSystemRepair)
+        {
+            UpdateStatusText.Text = "该功能仅支持 Windows";
+            return;
+        }
+
         UpdateStatusText.Text = "正在读取已安装更新...";
         var (_, output) = await RunAsync(
             "powershell",

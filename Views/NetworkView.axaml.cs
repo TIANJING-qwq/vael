@@ -109,6 +109,12 @@ public partial class NetworkView : UserControl
     {
         try
         {
+            if (!PlatformInfo.CanUseCctv)
+            {
+                MainWindow.PushToast("测试播放", "CCTV 直播仅支持 Windows（依赖 WebView2）");
+                return;
+            }
+
             var name = CctvChannels.Resolve(ScheduleChannelComboBox.SelectedItem as string);
             var url = CctvWebPlayerWindow.GetCctvLiveUrl(name) ?? "https://tv.cctv.com/live/cctv13/";
 

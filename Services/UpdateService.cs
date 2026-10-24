@@ -251,11 +251,12 @@ public sealed class UpdateService
     // ============================================================
     // ★ 安装：从 pending_update 生成替换脚本 → 退出主程序
     // ============================================================
-    public async Task<bool> InstallAsync()
+    public async Task<bool> InstallAsync(IProgress<double>? progress = null)
     {
         try
         {
             LogService.Log("开始安装更新...", "更新");
+            progress?.Report(0.10);
 
             if (!HasPendingUpdate)
             {
@@ -263,6 +264,7 @@ public sealed class UpdateService
                 InstallCompleted?.Invoke(false);
                 return false;
             }
+            progress?.Report(0.25);
 
             // 当前程序目录
             var currentExe = Environment.ProcessPath;
@@ -278,6 +280,7 @@ public sealed class UpdateService
             var batContent = BuildUpdateScript(
                 PendingDir, targetDir, Path.Combine(targetDir, "SBtools.exe"), "");
             File.WriteAllText(batPath, batContent, Encoding.ASCII);
+            progress?.Report(0.55);
 
             LogService.Log($"替换脚本已生成: {batPath}", "更新");
 
@@ -291,11 +294,14 @@ public sealed class UpdateService
             };
 
             Process.Start(psi);
+            progress?.Report(0.85);
             LogService.Log("更新脚本已启动，准备退出主程序", "更新");
 
             InstallCompleted?.Invoke(true);
 
-            await Task.Delay(500);
+            await Task.Delay(700);
+            progress?.Report(1.0);
+            await Task.Delay(400);
             Environment.Exit(0);
 
             return true;

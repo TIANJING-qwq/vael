@@ -41,6 +41,18 @@ public partial class CctvWebPlayerWindow : Window
 
         KeyDown += OnKeyDown;
         Closing += OnClosing;
+
+        if (!PlatformInfo.CanUseCctv)
+        {
+            // 非 Windows 平台：不支持 WebView2，直接提示并关闭
+            Opened += (_, _) =>
+            {
+                LogService.Log("当前平台不支持 WebView2，无法播放 CCTV 直播", "播放");
+                Close();
+            };
+            return;
+        }
+
         Opened += async (_, _) => await InitWebViewAsync();
     }
 

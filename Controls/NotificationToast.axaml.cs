@@ -103,6 +103,37 @@ public partial class NotificationToast : UserControl
         }
     }
 
+    /// <summary>设置底部进度条（0~1）。</summary>
+    public void SetProgress(double percent)
+    {
+        _progressScale.ScaleX = Math.Clamp(percent, 0, 1);
+    }
+
+    /// <summary>显示一个常驻通知（不自动消失，进度条由 SetProgress 驱动）。</summary>
+    public async Task ShowPersistentAsync()
+    {
+        try
+        {
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+
+            _isShown = false;
+            RootBorder.Opacity = 0;
+            RootBorder.RenderTransform = TransformOperations.Parse($"translateX({SlideOffsetPx}px)");
+
+            if (!await SafeDelayAsync(30, token)) return;
+
+            RootBorder.Opacity = 1;
+            RootBorder.RenderTransform = TransformOperations.Parse("translateX(0px)");
+            _isShown = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ShowPersistentAsync 兜底: {ex.Message}");
+        }
+    }
+
     public async Task HideAsync()
     {
         if (!_isShown) return;

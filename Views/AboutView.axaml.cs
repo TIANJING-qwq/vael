@@ -394,7 +394,7 @@ public partial class AboutView : UserControl
             if (ConfigManager.Instance.AutoInstallUpdate)
             {
                 UpdateStatusText.Text = "正在安装更新...";
-                await UpdateService.Instance.InstallAsync();
+                await MainWindow.InstallWithProgressAsync();
             }
             else
             {
@@ -403,7 +403,7 @@ public partial class AboutView : UserControl
                 if (owner != null && await installDialog.ShowDialog<bool>(owner))
                 {
                     UpdateStatusText.Text = "正在安装更新...";
-                    await UpdateService.Instance.InstallAsync();
+                    await MainWindow.InstallWithProgressAsync();
                 }
                 else
                 {

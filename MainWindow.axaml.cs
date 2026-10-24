@@ -44,6 +44,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         _instance = this;
 
+        ApplyPlatformAvailability();
+
         WindowBackdropService.Apply(this, ConfigManager.Instance.WindowBackdrop);
 
         if (startMinimized)
@@ -151,7 +153,7 @@ public partial class MainWindow : Window
                                 "安装更新", "立即安装");
 
                             if (await dlg.ShowDialog<bool>(this))
-                                await UpdateService.Instance.InstallAsync();
+                                await InstallWithProgressAsync();
                         }
                         catch (Exception ex)
                         {
@@ -265,6 +267,26 @@ public partial class MainWindow : Window
             .FirstOrDefault(i => i.Tag?.ToString() == tag);
         if (item != null)
             _instance.NavView.SelectedItem = item;
+    }
+
+    // ============================================================
+    // 平台能力：按平台隐藏不可用的导航项
+    // ============================================================
+    private void ApplyPlatformAvailability()
+    {
+        if (PlatformInfo.IsWindows) return;
+
+        HideNavItem("optimization");
+        HideNavItem("problems");
+    }
+
+    private void HideNavItem(string tag)
+    {
+        var item = NavView.MenuItems
+            .OfType<NavigationViewItem>()
+            .FirstOrDefault(i => i.Tag?.ToString() == tag);
+        if (item != null)
+            NavView.MenuItems.Remove(item);
     }
 
     // ============================================================
@@ -407,9 +429,8 @@ public partial class MainWindow : Window
 
             if (autoInstall)
             {
-                // 安装方式=自动：静默替换并重启
-                PushToast("更新", "下载完成，正在安装…");
-                await UpdateService.Instance.InstallAsync();
+                // 安装方式=自动：静默替换并重启（右下角进度弹窗）
+                await InstallWithProgressAsync();
             }
             else
             {
@@ -417,7 +438,7 @@ public partial class MainWindow : Window
                 if (_isHiddenToTray || !IsVisible) RestoreMainWindow();
                 var dialog = new UpdateAvailableDialog(version, "新版本已下载完成，是否立即安装？", "安装更新", "立即安装");
                 if (await dialog.ShowDialog<bool>(this))
-                    await UpdateService.Instance.InstallAsync();
+                    await InstallWithProgressAsync();
                 else
                     PushToast("更新已下载", "稍后会再次提示安装。");
             }
@@ -643,6 +664,12 @@ public partial class MainWindow : Window
             {
                 ClosePlayerWindow();
 
+                if (!PlatformInfo.CanUseCctv)
+                {
+                    PushToast(toastTitle, "CCTV 直播仅支持 Windows（依赖 WebView2）");
+                    return;
+                }
+
                 var name = CctvChannels.Resolve(channelName);
                 var url = CctvWebPlayerWindow.GetCctvLiveUrl(name)
                           ?? "https://tv.cctv.com/live/cctv13/";
@@ -806,6 +833,115 @@ public partial class MainWindow : Window
             Dispatch();
         else
             Dispatcher.UIThread.Post(Dispatch);
+    }
+
+    // ============================================================
+    // 更新安装进度（右下角小弹窗 + 进度条）
+    // ============================================================
+    private static NotificationToast? _updateProgressToast;
+
+    /// <summary>在右下角显示一个常驻的更新进度弹窗。</summary>
+    public static void PushUpdateProgress(string title, string message)
+    {
+        if (_instance == null) return;
+
+        void Dispatch()
+        {
+            try
+            {
+                var window = _instance;
+                if (window == null) return;
+
+                var host = window.FindControl<ToastHost>("GlobalToastHost");
+                if (host == null) return;
+
+                try { _updateProgressToast?.HideAsync(); } catch { }
+                _updateProgressToast = null;
+
+                var toast = new NotificationToast { Title = title, Message = message };
+                toast.SetProgress(0);
+                toast.Closed += (_, _) => { try { host.Children.Remove(toast); } catch { } };
+                host.Children.Add(toast);
+                _ = toast.ShowPersistentAsync();
+                _updateProgressToast = toast;
+            }
+            catch { }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+            Dispatch();
+        else
+            Dispatcher.UIThread.Post(Dispatch);
+    }
+
+    /// <summary>更新进度（0~1），可选更新副标题。</summary>
+    public static void SetUpdateProgress(double percent, string? message = null)
+    {
+        if (_instance == null) return;
+
+        void Dispatch()
+        {
+            try
+            {
+                _updateProgressToast?.SetProgress(percent);
+                if (message != null && _updateProgressToast != null)
+                    _updateProgressToast.Message = message;
+            }
+            catch { }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+            Dispatch();
+        else
+            Dispatcher.UIThread.Post(Dispatch);
+    }
+
+    public static void CloseUpdateProgress()
+    {
+        if (_instance == null) return;
+
+        void Dispatch()
+        {
+            try
+            {
+                _updateProgressToast?.HideAsync();
+                _updateProgressToast = null;
+            }
+            catch { }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+            Dispatch();
+        else
+            Dispatcher.UIThread.Post(Dispatch);
+    }
+
+    /// <summary>带右下角进度弹窗的安装。</summary>
+    public static async Task InstallWithProgressAsync()
+    {
+        PushUpdateProgress("正在安装更新", "准备中…");
+        SetUpdateProgress(0.05, "检查更新包…");
+
+        var progress = new Progress<double>(p =>
+        {
+            SetUpdateProgress(p, p switch
+            {
+                < 0.30 => "检查更新包…",
+                < 0.60 => "生成替换脚本…",
+                < 0.90 => "启动更新程序…",
+                _ => "即将重启…",
+            });
+        });
+
+        try
+        {
+            await UpdateService.Instance.InstallAsync(progress);
+        }
+        catch
+        {
+            CloseUpdateProgress();
+            throw;
+        }
     }
 
     private static async Task SafeShowAsync(NotificationToast toast, int durationSeconds)
