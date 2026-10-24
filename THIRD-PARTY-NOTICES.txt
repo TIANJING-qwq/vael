@@ -1,0 +1,77 @@
+﻿Vael 第三方组件许可声明
+========================
+
+本软件包含下列第三方组件，其版权与许可归各自作者所有。
+This software includes the following third-party components.
+
+1. Avalonia / Avalonia.Desktop / Themes.Fluent / Fonts.Inter  (MIT)
+   https://github.com/AvaloniaUI/Avalonia
+   Copyright (c) AvaloniaUI
+
+2. FluentAvalonia (FluentAvaloniaUI)  (MIT)
+   https://github.com/amwx/FluentAvalonia
+   Copyright (c) amwx
+
+3. Microsoft.Web.WebView2  (Microsoft Software License Terms)
+   https://developer.microsoft.com/microsoft-edge/webview2/
+   Copyright (c) Microsoft Corporation
+
+4. ReactiveUI (MIT) / System.Reactive (MIT)
+   https://github.com/reactiveui/ReactiveUI
+
+5. Newtonsoft.Json  (MIT)
+   https://github.com/JamesNK/Newtonsoft.Json
+   Copyright (c) James Newton-King
+
+6. LibVLCSharp  (LGPL-2.1-or-later)
+   https://github.com/videolan/libvlcsharp
+   Copyright (c) VideoLAN
+
+7. VideoLAN.LibVLC.Windows / LibVLC  (LGPL-2.1-or-later)
+   https://www.videolan.org/vlc/libvlc.html
+   Copyright (c) VideoLAN
+
+8. Updatum  (MIT)
+   https://github.com/sakya/Updatum
+
+9. System.Windows.Extensions  (MIT)
+   Copyright (c) .NET Foundation
+
+------------------------------------------------------------
+LGPL-2.1 说明（LibVLC / LibVLCSharp）
+------------------------------------------------------------
+本软件通过动态链接方式（libvlc.dll / libvlccore.dll 及 libvlc 插件）
+使用 LibVLC，未修改其源代码。
+依据 LGPL-2.1 条款：
+  * 您有权替换安装目录中的 LibVLC 动态库以使用修改后的版本；
+  * LibVLC 源代码可从 https://www.videolan.org/ 获取；
+  * 完整许可文本见 https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+------------------------------------------------------------
+MIT 组件说明
+------------------------------------------------------------
+上述 MIT 组件分发时保留其版权声明与许可声明。
+The MIT-licensed components above retain their copyright and
+permission notices.
+------------------------------------------------------------
+MIT License（适用于上述 MIT 组件）
+------------------------------------------------------------
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
