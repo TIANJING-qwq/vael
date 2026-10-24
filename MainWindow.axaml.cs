@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
@@ -202,6 +204,9 @@ public partial class MainWindow : Window
                 case "features":     ContentFrame.Navigate(typeof(FeaturesView));     break;
                 case "network":      ContentFrame.Navigate(typeof(NetworkView));      break;
                 case "optimization": ContentFrame.Navigate(typeof(OptimizationView)); break;
+                case "problems":     ContentFrame.Navigate(typeof(WindowsProblemsView)); break;
+                case "backup":       ContentFrame.Navigate(typeof(BackupView));        break;
+                case "tools":        ContentFrame.Navigate(typeof(SystemToolsView));  break;
                 case "lab":          ContentFrame.Navigate(typeof(LabView));          break;
                 case "gallery":      ContentFrame.Navigate(typeof(GalleryView));      break;
                 case "plugins":      ContentFrame.Navigate(typeof(PluginsView));      break;
@@ -211,7 +216,44 @@ public partial class MainWindow : Window
                     break;
                 case "about":        ContentFrame.Navigate(typeof(AboutView));        break;
             }
+
+            AnimateContentIn();
         }
+    }
+
+    /// <summary>全局页面进入动画：淡入 + 上浮</summary>
+    private void AnimateContentIn()
+    {
+        try
+        {
+            if (ContentFrame.Content is not Control c) return;
+
+            c.Transitions = new Transitions
+            {
+                new DoubleTransition
+                {
+                    Property = OpacityProperty,
+                    Duration = TimeSpan.FromMilliseconds(240),
+                    Easing = new ExponentialEaseOut(),
+                },
+                new TransformOperationsTransition
+                {
+                    Property = RenderTransformProperty,
+                    Duration = TimeSpan.FromMilliseconds(320),
+                    Easing = new BackEaseOut(),
+                },
+            };
+
+            c.Opacity = 0;
+            c.RenderTransform = TransformOperations.Parse("translateY(16px)");
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                c.Opacity = 1;
+                c.RenderTransform = TransformOperations.Parse("translateY(0px)");
+            }, DispatcherPriority.Background);
+        }
+        catch { }
     }
 
     /// <summary>供其它页面跳转到指定导航页（tag 与 MainWindow.axaml 菜单 Tag 一致）。</summary>
@@ -232,12 +274,23 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (ContentFrame.CanGoBack)
-                ContentFrame.GoBack();
-            else
-                NavigateTo("features");
+            LogService.Log("点击返回按钮", "导航");
+
+            // 1) 同步侧边栏选中项（由 SelectionChanged 触发导航）
+            var featuresItem = NavView.MenuItems
+                .OfType<NavigationViewItem>()
+                .FirstOrDefault(i => i.Tag?.ToString() == "features");
+            if (featuresItem != null)
+                NavView.SelectedItem = featuresItem;
+
+            // 2) 兜底：若内容还不是主页，直接强制导航（不依赖 SelectedItem 事件）
+            if (ContentFrame.Content is not FeaturesView)
+                ContentFrame.Navigate(typeof(FeaturesView));
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogService.Log($"返回失败: {ex.Message}", "导航");
+        }
     }
 
     // ============================================================

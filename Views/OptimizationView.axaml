@@ -1,6 +1,30 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ea="using:Avalonia.Animation.Easings"
              x:Class="SBtools.Views.OptimizationView">
+
+    <UserControl.Styles>
+        <!-- 分类卡片：悬停放大 + 按下回弹 -->
+        <Style Selector="Button.optCard">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22">
+                        <TransformOperationsTransition.Easing>
+                            <ea:BackEaseOut/>
+                        </TransformOperationsTransition.Easing>
+                    </TransformOperationsTransition>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.optCard:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.02)"/>
+        </Style>
+        <Style Selector="Button.optCard:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.98)"/>
+        </Style>
+    </UserControl.Styles>
+
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24">
 
         <!-- 标题 -->
@@ -47,39 +71,118 @@
             </Grid>
         </Border>
 
-        <!-- 分类 TabControl -->
-        <TabControl Grid.Row="2" Name="CategoryTabs">
+        <!-- 内容区 -->
+        <Grid Grid.Row="2">
 
-            <TabItem Header="服务优化">
-                <ScrollViewer>
-                    <StackPanel Name="ServicesPanel" Margin="16,20" Spacing="10" />
-                </ScrollViewer>
-            </TabItem>
+            <!-- ===== 分类卡片（默认） ===== -->
+            <ScrollViewer x:Name="CategoryCardsView">
+                <WrapPanel Margin="0,2">
 
-            <TabItem Header="AI 组件">
-                <ScrollViewer>
-                    <StackPanel Name="AiPanel" Margin="16,20" Spacing="10" />
-                </ScrollViewer>
-            </TabItem>
+                    <Button Click="ServicesCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="⚙️" FontSize="26" />
+                            <TextBlock Text="服务优化" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="关闭不必要的系统服务" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
 
-            <TabItem Header="隐私">
-                <ScrollViewer>
-                    <StackPanel Name="PrivacyPanel" Margin="16,20" Spacing="10" />
-                </ScrollViewer>
-            </TabItem>
+                    <Button Click="AiCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="🤖" FontSize="26" />
+                            <TextBlock Text="AI 组件" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="管理 AI 相关系统组件" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
 
-            <TabItem Header="性能">
-                <ScrollViewer>
-                    <StackPanel Name="PerformancePanel" Margin="16,20" Spacing="10" />
-                </ScrollViewer>
-            </TabItem>
+                    <Button Click="PrivacyCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="🔒" FontSize="26" />
+                            <TextBlock Text="隐私" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="关闭遥测与数据上报" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
 
-            <TabItem Header="清理">
-                <ScrollViewer>
-                    <StackPanel Name="CleanupPanel" Margin="16,20" Spacing="10" />
-                </ScrollViewer>
-            </TabItem>
-        </TabControl>
+                    <Button Click="PerformanceCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="⚡" FontSize="26" />
+                            <TextBlock Text="性能" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="游戏/前台性能优化" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="CleanupCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="🧹" FontSize="26" />
+                            <TextBlock Text="清理" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="清理临时文件与缓存" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="SystemToolsCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="🛠" FontSize="26" />
+                            <TextBlock Text="系统工具" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="系统修复 · 备份 · 更新管理" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
+
+                </WrapPanel>
+            </ScrollViewer>
+
+            <!-- ===== 分类详情（点击卡片进入） ===== -->
+            <ScrollViewer x:Name="CategoryDetailView" IsVisible="False">
+                <StackPanel Margin="0,2" Spacing="14">
+
+                    <Button Content="← 返回分类"
+                            Click="BackToCategories_Click"
+                            HorizontalAlignment="Left"
+                            Padding="14,8"
+                            CornerRadius="6" />
+
+                    <TextBlock x:Name="DetailTitle"
+                               FontSize="20"
+                               FontWeight="Bold" />
+
+                    <StackPanel Name="ServicesPanel" Spacing="10" IsVisible="False" />
+                    <StackPanel Name="AiPanel" Spacing="10" IsVisible="False" />
+                    <StackPanel Name="PrivacyPanel" Spacing="10" IsVisible="False" />
+                    <StackPanel Name="PerformancePanel" Spacing="10" IsVisible="False" />
+                    <StackPanel Name="CleanupPanel" Spacing="10" IsVisible="False" />
+
+                    <ContentControl Name="SystemToolsHost" IsVisible="False" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
 
         <!-- 底部日志 -->
         <Border Grid.Row="3"

@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SBtools.Views.SystemToolsView">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Margin="24,24,24,8" Spacing="4">
+            <TextBlock Text="系统工具" FontSize="28" FontWeight="Bold" />
+            <TextBlock Text="系统修复 · 更新管理 · 第三方工具（多数操作需要管理员权限，工具会自动下载并运行）"
+                       FontSize="14" Opacity="0.6" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="24,8,24,24" Spacing="18" MaxWidth="920">
+
+                <!-- ============ 系统修复 ============ -->
+                <TextBlock Text="系统修复" FontSize="17" FontWeight="SemiBold" />
+                <WrapPanel>
+                    <Button Content="🛡 360 系统急救箱" Click="Launch360_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                    <Button Content="🔥 火绒系统修复" Click="LaunchHuorong_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                    <Button Content="🩺 Windows 问题修复" Click="WindowsRepair_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                    <Button Content="💿 EasyRC 一键重装" Click="LaunchEasyRC_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                    <Button Content="🧰 LazyEnv 懒人环境" Click="LaunchLazyEnv_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                    <Button Content="💾 OBR 系统备份" Click="LaunchObr_Click"
+                            Width="220" Height="86" Margin="0,0,14,14"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10" />
+                </WrapPanel>
+
+                <!-- ============ 更新管理 ============ -->
+                <TextBlock Text="Windows 更新管理" FontSize="17" FontWeight="SemiBold" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="18">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="刷新已安装更新" Click="RefreshUpdates_Click" Padding="16,8" CornerRadius="6" />
+                            <Button Content="卸载选中更新" Click="UninstallSelectedUpdate_Click" Padding="16,8" CornerRadius="6" />
+                        </StackPanel>
+                        <ListBox x:Name="UpdateListBox" Height="180" />
+                        <TextBlock x:Name="UpdateStatusText" FontSize="12" Opacity="0.6" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 日志 -->
+                <TextBlock Text="操作日志" FontSize="17" FontWeight="SemiBold" />
+                <Border Background="#1E1E1E" BorderBrush="#333333" BorderThickness="1"
+                        CornerRadius="6" Padding="10" MaxHeight="160">
+                    <ScrollViewer>
+                        <StackPanel x:Name="LogPanel" Spacing="2" />
+                    </ScrollViewer>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

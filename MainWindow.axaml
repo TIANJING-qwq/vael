@@ -60,6 +60,18 @@
                     </fluent:NavigationViewItem.IconSource>
                 </fluent:NavigationViewItem>
 
+                <fluent:NavigationViewItem Content="常见问题" Tag="problems">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Help" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
+
+                <fluent:NavigationViewItem Content="备份" Tag="backup">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Save" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
+
                 <fluent:NavigationViewItem Content="实验室" Tag="lab">
                     <fluent:NavigationViewItem.IconSource>
                         <fluent:SymbolIconSource Symbol="Repair" />

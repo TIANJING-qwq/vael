@@ -4,6 +4,7 @@
         Title="CCTV 直播"
         Background="Black"
         SystemDecorations="None"
+        Topmost="True"
         WindowState="FullScreen">
     <TextBlock Text="正在加载 CCTV 直播…"
                Foreground="White"

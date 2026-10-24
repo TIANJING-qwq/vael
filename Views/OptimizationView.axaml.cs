@@ -1,7 +1,10 @@
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using SBtools.Services;
 using System;
@@ -34,6 +37,87 @@ public partial class OptimizationView : UserControl
             await Task.Delay(200);
             await RefreshAllStatusAsync();
         };
+    }
+
+    // ============================================================
+    // 分类卡片 → 详情
+    // ============================================================
+    private void ServicesCard_Click(object? sender, RoutedEventArgs e) => ShowCategory("服务优化", "ServicesPanel");
+    private void AiCard_Click(object? sender, RoutedEventArgs e) => ShowCategory("AI 组件", "AiPanel");
+    private void PrivacyCard_Click(object? sender, RoutedEventArgs e) => ShowCategory("隐私", "PrivacyPanel");
+    private void PerformanceCard_Click(object? sender, RoutedEventArgs e) => ShowCategory("性能", "PerformancePanel");
+    private void CleanupCard_Click(object? sender, RoutedEventArgs e) => ShowCategory("清理", "CleanupPanel");
+
+    private void ShowCategory(string title, string panelName)
+    {
+        CategoryCardsView.IsVisible = false;
+        CategoryDetailView.IsVisible = true;
+        DetailTitle.Text = title;
+        SystemToolsHost.IsVisible = false;
+
+        ServicesPanel.IsVisible = panelName == "ServicesPanel";
+        AiPanel.IsVisible = panelName == "AiPanel";
+        PrivacyPanel.IsVisible = panelName == "PrivacyPanel";
+        PerformancePanel.IsVisible = panelName == "PerformancePanel";
+        CleanupPanel.IsVisible = panelName == "CleanupPanel";
+        AnimateIn(CategoryDetailView);
+    }
+
+    private void SystemToolsCard_Click(object? sender, RoutedEventArgs e)
+    {
+        CategoryCardsView.IsVisible = false;
+        CategoryDetailView.IsVisible = true;
+        DetailTitle.Text = "系统工具";
+
+        ServicesPanel.IsVisible = false;
+        AiPanel.IsVisible = false;
+        PrivacyPanel.IsVisible = false;
+        PerformancePanel.IsVisible = false;
+        CleanupPanel.IsVisible = false;
+
+        SystemToolsHost.IsVisible = true;
+        if (SystemToolsHost.Content == null)
+            SystemToolsHost.Content = new SystemToolsView();
+        AnimateIn(CategoryDetailView);
+    }
+
+    private void BackToCategories_Click(object? sender, RoutedEventArgs e)
+    {
+        CategoryDetailView.IsVisible = false;
+        CategoryCardsView.IsVisible = true;
+        SystemToolsHost.IsVisible = false;
+        AnimateIn(CategoryCardsView);
+    }
+
+    /// <summary>详情/列表进入动画：淡入 + 上浮（与关于页风格一致）</summary>
+    private static void AnimateIn(Control c)
+    {
+        try
+        {
+            c.Transitions = new Transitions
+            {
+                new DoubleTransition
+                {
+                    Property = OpacityProperty,
+                    Duration = TimeSpan.FromMilliseconds(220),
+                    Easing = new ExponentialEaseOut(),
+                },
+                new TransformOperationsTransition
+                {
+                    Property = RenderTransformProperty,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    Easing = new BackEaseOut(),
+                },
+            };
+            c.Opacity = 0;
+            c.RenderTransform = TransformOperations.Parse("translateY(14px)");
+            Dispatcher.UIThread.Post(() =>
+            {
+                c.Opacity = 1;
+                c.RenderTransform = TransformOperations.Parse("translateY(0px)");
+            });
+        }
+        catch { }
     }
 
     private void BuildCategory(string category, string panelName)

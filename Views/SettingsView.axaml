@@ -355,6 +355,19 @@
 
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="以管理员身份启动" FontSize="13"/>
+                    <TextBlock Text="通过最高权限计划任务实现：登录时自动以管理员运行、免 UAC 确认"
+                               FontSize="11" Opacity="0.5" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1"
+                              x:Name="AdminStartSwitch"
+                              IsCheckedChanged="AdminStartSwitch_Changed"/>
+            </Grid>
+
+            <TextBlock x:Name="AdminStartStatusText" FontSize="11" Opacity="0.5" TextWrapping="Wrap" />
+
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="2">
                     <TextBlock Text="启动动画" FontSize="13"/>
                     <TextBlock Text="每次启动主程序时播放开场动画"
                                FontSize="11" Opacity="0.5"/>

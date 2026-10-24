@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SBtools.Views.BackupView">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <StackPanel Grid.Row="0" Margin="24,24,24,8" Spacing="4">
+            <TextBlock Text="数据备份" FontSize="28" FontWeight="Bold" />
+            <TextBlock Text="自由选择要备份的文件夹，一键复制到其他盘符（不会删除原文件）"
+                       FontSize="14" Opacity="0.6" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="24,8,24,24" Spacing="16" MaxWidth="920">
+
+                <!-- 备份范围 -->
+                <TextBlock Text="① 选择备份范围" FontSize="17" FontWeight="SemiBold" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="18">
+                    <WrapPanel>
+                        <CheckBox x:Name="DesktopCheck" Content="桌面" IsChecked="True" Margin="0,0,24,10" />
+                        <CheckBox x:Name="DocumentsCheck" Content="文档" IsChecked="True" Margin="0,0,24,10" />
+                        <CheckBox x:Name="DownloadsCheck" Content="下载" IsChecked="True" Margin="0,0,24,10" />
+                        <CheckBox x:Name="PicturesCheck" Content="图片" IsChecked="True" Margin="0,0,24,10" />
+                        <CheckBox x:Name="VideosCheck" Content="视频" IsChecked="True" Margin="0,0,24,10" />
+                        <CheckBox x:Name="MusicCheck" Content="音乐" IsChecked="True" Margin="0,0,24,10" />
+                    </WrapPanel>
+                </Border>
+
+                <!-- 目标位置 -->
+                <TextBlock Text="② 选择备份目标盘符" FontSize="17" FontWeight="SemiBold" />
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="18">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <ComboBox x:Name="TargetDriveCombo" Width="260" />
+                        <Button Content="刷新盘符" Click="RefreshDrives_Click" Padding="14,6" CornerRadius="6" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 开始 -->
+                <TextBlock Text="③ 执行" FontSize="17" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="开始备份" Click="StartBackup_Click" Padding="20,9" CornerRadius="6"
+                            Background="#0078D4" Foreground="White" BorderThickness="0" FontWeight="SemiBold" />
+                    <Button Content="打开备份目录" Click="OpenBackupDir_Click" Padding="14,6" CornerRadius="6" />
+                </StackPanel>
+
+                <TextBlock x:Name="StatusText" FontSize="12.5" Opacity="0.65" TextWrapping="Wrap" />
+
+                <!-- 日志 -->
+                <TextBlock Text="操作日志" FontSize="17" FontWeight="SemiBold" />
+                <Border Background="#1E1E1E" BorderBrush="#333333" BorderThickness="1"
+                        CornerRadius="6" Padding="10" MaxHeight="180">
+                    <ScrollViewer>
+                        <StackPanel x:Name="LogPanel" Spacing="2" />
+                    </ScrollViewer>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

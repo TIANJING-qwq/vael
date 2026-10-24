@@ -569,9 +569,12 @@ exit 0
     {
         try
         {
+            // ★ %TEMP% 在受限/沙箱环境不可写，改用可写的 AppDataDir 子目录
+            var optDir = System.IO.Path.Combine(Models.ConfigManager.AppDataDir, "tmp");
+            System.IO.Directory.CreateDirectory(optDir);
             var tempFile = System.IO.Path.Combine(
-                System.IO.Path.GetTempPath(),
-                $"xiyue_opt_{Guid.NewGuid():N}.ps1");
+                optDir,
+                $"vael_opt_{Guid.NewGuid():N}.ps1");
             await System.IO.File.WriteAllTextAsync(tempFile, script, System.Text.Encoding.UTF8);
 
             var psi = new ProcessStartInfo

@@ -2,10 +2,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using SBtools.Controls;
 using SBtools.Models;
 using SBtools.Services;
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace SBtools.Views;
@@ -193,6 +196,7 @@ public partial class SettingsView : UserControl
     {
         _isUnlocked = false;
         ApplyLockState();
+        LoadAdminStartState();
     }
 
     /// <summary>安全码是否已开启且已设置</summary>
@@ -773,6 +777,86 @@ public partial class SettingsView : UserControl
 
         MainWindow.PushToast("自启动隐藏",
             value ? "开机后自动隐藏到托盘" : "开机后显示主窗口");
+    }
+
+    // ============================================================
+    // 以管理员身份启动（最高权限计划任务，免 UAC）
+    // ============================================================
+    private const string AdminTaskName = "VaelAdminStart";
+    private bool _adminInit;
+
+    private void AdminStartSwitch_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (_adminInit || _isInitializing) return;
+        _ = ApplyAdminStartAsync(AdminStartSwitch.IsChecked == true);
+    }
+
+    private async Task ApplyAdminStartAsync(bool enable)
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath
+                          ?? System.IO.Path.Combine(AppContext.BaseDirectory, "SBtools.exe");
+            var args = enable
+                ? $"/create /tn \"{AdminTaskName}\" /tr \"\\\"{exePath}\\\" --autostart\" /sc onlogon /rl highest /delay 0000:10 /f"
+                : $"/delete /tn \"{AdminTaskName}\" /f";
+
+            var (code, output) = await RunProcessAsync("schtasks", args);
+            AdminStartStatusText.Text = enable
+                ? (code == 0
+                    ? "已启用：登录时以最高权限自动启动（无需 UAC 确认）"
+                    : "创建失败，请以管理员身份运行程序后重试")
+                : "未启用";
+            LogService.Log($"管理员自启 {(enable ? "创建" : "删除")} 结果: {code} {output}", "设置");
+        }
+        catch (Exception ex)
+        {
+            AdminStartStatusText.Text = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private async void LoadAdminStartState()
+    {
+        try
+        {
+            var (code, _) = await RunProcessAsync("schtasks", $"/query /tn \"{AdminTaskName}\"");
+            var exists = code == 0;
+            Dispatcher.UIThread.Post(() =>
+            {
+                _adminInit = true;
+                if (AdminStartSwitch != null) AdminStartSwitch.IsChecked = exists;
+                if (AdminStartStatusText != null)
+                    AdminStartStatusText.Text = exists
+                        ? "已启用：登录时以最高权限自动启动（无需 UAC 确认）"
+                        : "未启用";
+                _adminInit = false;
+            });
+        }
+        catch { }
+    }
+
+    private static async Task<(int code, string output)> RunProcessAsync(string file, string args)
+    {
+        var psi = new ProcessStartInfo(file, args)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        try
+        {
+            using var p = Process.Start(psi);
+            if (p == null) return (-1, "");
+            var output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+            var error = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
+            await p.WaitForExitAsync().ConfigureAwait(false);
+            return (p.ExitCode, output + error);
+        }
+        catch (Exception ex)
+        {
+            return (-1, ex.Message);
+        }
     }
 
     private void MinTraySwitch_Changed(object? sender, RoutedEventArgs e)
