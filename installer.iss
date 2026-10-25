@@ -1,4 +1,4 @@
-﻿[Setup]
+[Setup]
 AppName=Vael
 AppVersion=0.5.0
 AppPublisher=Vael
@@ -16,7 +16,9 @@ SetupIconFile=Assets\app.ico
 ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+; 注：CI 的 choco Inno 不带中文语言文件，用自带 Default.isl 保证可编译
+; （静默升级 /VERYSILENT 下语言界面用户不可见；自定义中文字符串仍生效）
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加图标:"
