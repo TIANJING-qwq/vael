@@ -54,9 +54,95 @@ public partial class AboutView : UserControl
         }
     }
 
+    // ============================================================
+    // 🥚 彩蛋：连点 Logo 5 次 → 字母波浪跳动 + 变色
+    // ============================================================
+    private int _eggClicks;
+    private DateTime _eggLast = DateTime.MinValue;
+    private bool _eggPlaying;
+
+    private void Logo_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        // 2 秒内连点才累计
+        if ((DateTime.Now - _eggLast).TotalSeconds > 2)
+            _eggClicks = 0;
+        _eggLast = DateTime.Now;
+
+        if (++_eggClicks < 5 || _eggPlaying) return;
+        _eggClicks = 0;
+        _eggPlaying = true;
+
+        PlayEasterEgg();
+    }
+
+    private void PlayEasterEgg()
+    {
+        var letters = new[] { Letter0, Letter1, Letter2, Letter3 };
+        var colors = new[]
+        {
+            Avalonia.Media.Brush.Parse("#FF5555"),
+            Avalonia.Media.Brush.Parse("#FFAA00"),
+            Avalonia.Media.Brush.Parse("#22AA22"),
+            Avalonia.Media.Brush.Parse("#60CDFF"),
+        };
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        const int perLetterMs = 420;
+        const int staggerMs = 90;
+        const int totalMs = perLetterMs + staggerMs * 3 + 120;
+
+        timer.Tick += (_, _) =>
+        {
+            try
+            {
+                int elapsed = (int)sw.Elapsed.TotalMilliseconds;
+                bool done = true;
+
+                for (int i = 0; i < letters.Length; i++)
+                {
+                    int t = elapsed - i * staggerMs;
+                    if (t < 0) { done = false; continue; }
+                    if (t > perLetterMs)
+                    {
+                        letters[i].RenderTransform = null;
+                        continue;
+                    }
+                    done = false;
+
+                    // 一个完整正弦波：上浮 → 回落（无过冲）
+                    double phase = t / (double)perLetterMs;
+                    double bounce = Math.Sin(phase * Math.PI) * 14;
+                    letters[i].RenderTransform =
+                        Avalonia.Media.Transformation.TransformOperations.Parse($"translateY({bounce:0.##}px)");
+                }
+
+                // 颜色轮换（跳动期间）
+                if (elapsed % 150 < 16)
+                {
+                    for (int i = 0; i < letters.Length; i++)
+                        letters[i].Foreground = colors[(i + elapsed / 150) % 4];
+                }
+
+                if (done)
+                {
+                    timer.Stop();
+                    _eggPlaying = false;
+                }
+            }
+            catch { timer.Stop(); _eggPlaying = false; }
+        };
+
+        timer.Start();
+        MainWindow.PushToast("🥚", "你发现了隐藏彩蛋！Vael 感谢你的好奇心～", 6);
+    }
+
     public AboutView()
     {
         InitializeComponent();
+
+        // ★ 彩蛋：连点 Logo 5 次
+        TitlePanel.PointerPressed += Logo_PointerPressed;
 
         // ★ 加载制作人员头像（容错，失败不崩）
         LoadCreditImages();
