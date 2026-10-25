@@ -44,8 +44,42 @@ jobs:
           path: publish/Vael_*.zip
           if-no-files-found: error
 
+  # ★ Windows 安装包：Inno Setup 静默升级用（规避 ZIP 换 DLL 的误报行为链）
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish win-x64
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained false -o publish/win-x64
+          $vlc = "$env:USERPROFILE\.nuget\packages\videolan.libvlc.windows\3.0.21\build\x64"
+          if (Test-Path $vlc) { Copy-Item "$vlc\*" publish/win-x64/ -Recurse -Force }
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
+          & $iscc installer.iss
+          Move-Item "publish\installer\*.exe" "Vael_Setup_${{ github.ref_name }}.exe"
+          ls *.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vael-setup
+          path: Vael_Setup_*.exe
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, installer]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -62,5 +96,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.exe
           generate_release_notes: true

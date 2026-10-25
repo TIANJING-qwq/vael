@@ -13,6 +13,11 @@
     <Version>0.5.1</Version>
     <AssemblyVersion>0.5.1</AssemblyVersion>
     <FileVersion>0.5.1</FileVersion>
+    <AssemblyTitle>Vael</AssemblyTitle>
+    <Product>Vael 系统工具箱</Product>
+    <Company>Vael Project</Company>
+    <Copyright>Copyright © 2026 Vael Project</Copyright>
+    <Description>Vael - Windows 系统工具箱（开源，https://github.com/TIANJING-qwq/vael）</Description>
     <InformationalVersion>Dev0.5.0</InformationalVersion>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>

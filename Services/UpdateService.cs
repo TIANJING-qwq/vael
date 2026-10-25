@@ -142,6 +142,36 @@ public sealed class UpdateService
                 return false;
             }
 
+            // ★ Windows 优先用安装包静默升级：
+            //   不再"解压 dll 到 AppData + bat 换文件"（该模式易被启发式判为木马），
+            //   改由 Inno 安装器正常替换文件。
+            if (OperatingSystem.IsWindows())
+            {
+                var setup = release.Assets.FirstOrDefault(a =>
+                    a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                    a.Name.Contains("Setup", StringComparison.OrdinalIgnoreCase));
+                if (setup != null)
+                {
+                    LogService.Log($"已选择安装包资产: {setup.Name}", "更新");
+                    var setupPath = Path.Combine(ConfigManager.AppDataDir,
+                        $"Vael_setup_{Guid.NewGuid():N}.exe");
+
+                    await DownloadFileAsync(
+                        (ConfigManager.Instance.UpdateProxy ?? "") + setup.BrowserDownloadUrl,
+                        setupPath, token);
+                    LogService.Log($"安装包下载完成: {setupPath}，启动静默升级", "更新");
+
+                    try { DownloadCompleted?.Invoke(true); } catch { }
+                    Process.Start(new ProcessStartInfo(setupPath,
+                        "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES")
+                    { UseShellExecute = true });
+                    await Task.Delay(1000);
+                    Environment.Exit(0);
+                    return true;
+                }
+                LogService.Log("Release 无安装包资产，回退 ZIP 更新", "更新");
+            }
+
             // ★ 按平台挑选对应资产（不能再取第一个 zip，否则会拿到别的平台包）
             var rid = CurrentRuntimeId();
             var asset = release.Assets.FirstOrDefault(a =>
