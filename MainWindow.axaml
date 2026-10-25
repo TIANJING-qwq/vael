@@ -37,6 +37,7 @@
                                PaneDisplayMode="Left"
                                IsSettingsVisible="False"
                                IsBackButtonVisible="True"
+                               IsBackEnabled="True"
                                BackRequested="NavView_BackRequested"
                                Background="Transparent"
                                SelectionChanged="NavView_SelectionChanged">

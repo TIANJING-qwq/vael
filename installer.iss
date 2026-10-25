@@ -1,6 +1,6 @@
 ﻿[Setup]
 AppName=Vael
-AppVersion=0.4.9
+AppVersion=0.5.0
 AppPublisher=Vael
 DefaultDirName={autopf}\Vael
 DefaultGroupName=Vael
@@ -11,7 +11,7 @@ WizardStyle=modern
 LicenseFile=LICENSE.txt
 PrivilegesRequired=lowest
 OutputDir=.\publish\installer
-OutputBaseFilename=Vael_Setup_v0.4.9
+OutputBaseFilename=Vael_Setup_v0.5.0
 SetupIconFile=Assets\app.ico
 ArchitecturesInstallIn64BitMode=x64
 

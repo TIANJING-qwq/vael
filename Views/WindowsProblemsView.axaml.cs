@@ -1,23 +1,279 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using SBtools.Models;
 using SBtools.Services;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
+using System.Linq;
 
 namespace SBtools.Views;
 
 public partial class WindowsProblemsView : UserControl
 {
+    private readonly ObservableCollection<WindowsProblem> _filtered = new();
+    private readonly List<Button> _catCards = new();
+    private string? _selectedCat;
+
     public WindowsProblemsView()
     {
         InitializeComponent();
+
+        BuildCategoryCards();
+        ProblemList.ItemsSource = _filtered;
+        ApplyFilter();
     }
 
     // ============================================================
-    // 通用
+    // 分类方块卡片
     // ============================================================
+    private void BuildCategoryCards()
+    {
+        _catCards.Clear();
+        CategoryCardsHost.Children.Clear();
+
+        AddCategoryCard(null, "全部", "📋");
+        foreach (var c in WindowsProblemCatalog.Categories)
+        {
+            var count = WindowsProblemCatalog.All.Count(p => p.Category == c);
+            AddCategoryCard(c, $"{c}  {count}", null);
+        }
+        UpdateCardStyles();
+    }
+
+    private void AddCategoryCard(string? cat, string label, string? icon)
+    {
+        var text = icon == null ? label : $"{icon}  {label}";
+        var card = new Button
+        {
+            Content = new TextBlock { Text = text, FontSize = 12.5 },
+            Tag = cat,
+            Padding = new Avalonia.Thickness(14, 8),
+            Margin = new Avalonia.Thickness(0, 0, 10, 10),
+            MinWidth = 110,
+            HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Background = Avalonia.Media.Brush.Parse("#22FFFFFF"),
+            BorderThickness = new Avalonia.Thickness(1),
+            BorderBrush = Avalonia.Media.Brush.Parse("#33FFFFFF"),
+            Foreground = Avalonia.Media.Brushes.White,
+        };
+        card.Click += CategoryCard_Click;
+        _catCards.Add(card);
+        CategoryCardsHost.Children.Add(card);
+    }
+
+    private void CategoryCard_Click(object? sender, RoutedEventArgs e)
+    {
+        _selectedCat = (sender as Button)?.Tag as string;
+        UpdateCardStyles();
+        ApplyFilter();
+    }
+
+    private void UpdateCardStyles()
+    {
+        foreach (var card in _catCards)
+        {
+            bool selected = (card.Tag as string) == _selectedCat;
+            card.Background = selected
+                ? Avalonia.Media.Brush.Parse("#0078D4")
+                : Avalonia.Media.Brush.Parse("#22FFFFFF");
+        }
+    }
+
+    // ============================================================
+    // 过滤 / 搜索
+    // ============================================================
+    private void SearchBox_TextChanged(object? sender, TextChangedEventArgs e) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        var kw = (SearchBox.Text ?? "").Trim();
+
+        var list = WindowsProblemCatalog.All.Where(p =>
+            (_selectedCat == null || p.Category == _selectedCat) &&
+            (kw.Length == 0 ||
+             p.Title.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+             p.Symptom.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+             p.Manual.Contains(kw, StringComparison.OrdinalIgnoreCase)));
+
+        _filtered.Clear();
+        foreach (var p in list)
+            _filtered.Add(p);
+
+        CountText.Text = _selectedCat == null
+            ? $"共 {_filtered.Count} 个"
+            : $"{_selectedCat} · {_filtered.Count} 个";
+        EmptyHint.IsVisible = _filtered.Count == 0;
+    }
+
+    // ============================================================
+    // 自动动作执行
+    // ============================================================
+    private void AutoActionButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ProblemAction a })
+            Execute(a);
+    }
+
+    private void Execute(ProblemAction a)
+    {
+        Log($"执行：{a.Label}");
+        try
+        {
+            bool adminOnly = a.Kind is ProblemActionKind.RunSfcDism
+                or ProblemActionKind.NetshWinsockReset or ProblemActionKind.NetshIpReset
+                or ProblemActionKind.CheckDisk or ProblemActionKind.ResetWmi
+                or ProblemActionKind.PowerHibernationOff or ProblemActionKind.PowerFastStartupOff
+                or ProblemActionKind.DisableAutoReboot or ProblemActionKind.RestartAudio;
+
+            if (adminOnly && !IsAdmin())
+            {
+                Log("✗ 需要管理员权限，请以管理员身份运行 Vael 后重试");
+                return;
+            }
+
+            switch (a.Kind)
+            {
+                case ProblemActionKind.RestartExplorer:
+                    RunCmd("/c taskkill /f /im explorer.exe & start explorer.exe", visible: false);
+                    Log("✓ 资源管理器已重启");
+                    break;
+
+                case ProblemActionKind.OpenControlPanel:
+                    StartShell("control.exe");
+                    break;
+
+                case ProblemActionKind.OpenDateAndTime:
+                    StartShell("control.exe", "/name Microsoft.DateAndTime");
+                    break;
+
+                case ProblemActionKind.RunSfcDism:
+                    RunVisibleCmd(@"/k echo ===== SFC 扫描 ===== & sfc /scannow & echo ===== DISM 修复 ===== & DISM /Online /Cleanup-Image /RestoreHealth & echo ===== 完成，可关闭本窗口 ===== & pause");
+                    Log("已打开修复窗口（耗时约 10-30 分钟，请勿中途关闭）");
+                    break;
+
+                case ProblemActionKind.NetshWinsockReset:
+                    RunVisibleCmd("/k netsh winsock reset & echo 完成，请重启电脑生效 & pause");
+                    break;
+
+                case ProblemActionKind.NetshIpReset:
+                    RunVisibleCmd("/k netsh int ip reset & echo 完成，请重启电脑生效 & pause");
+                    break;
+
+                case ProblemActionKind.FlushDns:
+                    RunVisibleCmd("/k ipconfig /flushdns & pause");
+                    break;
+
+                case ProblemActionKind.RenewIp:
+                    RunVisibleCmd("/k ipconfig /release & ipconfig /renew & pause");
+                    break;
+
+                case ProblemActionKind.RebuildIconCache:
+                    RunCmd("/c taskkill /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\IconCache.db\" & start explorer.exe", visible: false);
+                    Log("✓ 图标缓存已重建（若图标仍异常请注销重登）");
+                    break;
+
+                case ProblemActionKind.ThumbnailCache:
+                    RunCmd("/c taskkill /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db\" & start explorer.exe", visible: false);
+                    Log("✓ 缩略图缓存已清理");
+                    break;
+
+                case ProblemActionKind.OpenMsSettings:
+                    if (!string.IsNullOrEmpty(a.Arg)) StartShell("ms-settings:" + a.Arg);
+                    break;
+
+                case ProblemActionKind.RunCommand:
+                    if (!string.IsNullOrEmpty(a.Arg)) RunVisibleCmd("/k " + a.Arg);
+                    break;
+
+                case ProblemActionKind.OpenUrl:
+                    if (!string.IsNullOrEmpty(a.Arg)) StartShell(a.Arg);
+                    break;
+
+                case ProblemActionKind.OpenFolder:
+                    if (!string.IsNullOrEmpty(a.Arg)) StartShell("explorer.exe", Expand(a.Arg));
+                    break;
+
+                case ProblemActionKind.ResetStoreCache:
+                    StartShell("wsreset.exe");
+                    Log("已重置应用商店缓存（稍后会自动打开商店）");
+                    break;
+
+                case ProblemActionKind.CheckDisk:
+                    RunVisibleCmd("/k chkdsk C: /f & pause");
+                    Log("已打开磁盘检查（提示时输入 Y 并回车，重启后执行）");
+                    break;
+
+                case ProblemActionKind.RestartAudio:
+                    RunVisibleCmd("/k net stop audiosrv & net stop AudioEndpointBuilder & net start audiosrv & net start AudioEndpointBuilder & pause");
+                    break;
+
+                case ProblemActionKind.ResetWmi:
+                    RunVisibleCmd("/k winmgmt /verifyrepository & winmgmt /salvagerepository & pause");
+                    break;
+
+                case ProblemActionKind.PowerHibernationOff:
+                    RunVisibleCmd("/k powercfg /h off & echo 已关闭休眠 & pause");
+                    break;
+
+                case ProblemActionKind.PowerFastStartupOff:
+                    RunVisibleCmd("/k reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power\" /v HiberbootEnabled /t REG_DWORD /d 0 /f & echo 已关闭快速启动 & pause");
+                    break;
+
+                case ProblemActionKind.OpenUpdateHistory:
+                    StartShell("ms-settings:windowsupdate-history");
+                    break;
+
+                case ProblemActionKind.OpenTroubleshoot:
+                    StartShell("ms-settings:troubleshoot");
+                    break;
+
+                case ProblemActionKind.DisableAutoReboot:
+                    RunVisibleCmd("/k wmic recoveros set AutoReboot=False & echo 已关闭蓝屏自动重启 & pause");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log("✗ 执行失败: " + ex.Message);
+        }
+    }
+
+    // ============================================================
+    // 进程 / 通用
+    // ============================================================
+    private static void RunVisibleCmd(string args) => RunCmd(args, visible: true);
+
+    private static void RunCmd(string args, bool visible)
+    {
+        var psi = new ProcessStartInfo("cmd.exe", args)
+        {
+            UseShellExecute = true,
+        };
+        if (!visible)
+        {
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+        }
+        Process.Start(psi);
+    }
+
+    private static void StartShell(string file, string? args = null)
+    {
+        var psi = new ProcessStartInfo(file)
+        {
+            UseShellExecute = true,
+        };
+        if (!string.IsNullOrEmpty(args)) psi.Arguments = args;
+        Process.Start(psi);
+    }
+
+    private static string Expand(string path) => Environment.ExpandEnvironmentVariables(path);
+
     private static bool IsAdmin()
     {
         try
@@ -45,154 +301,5 @@ public partial class WindowsProblemsView : UserControl
             while (LogPanel.Children.Count > 100)
                 LogPanel.Children.RemoveAt(0);
         });
-    }
-
-    private static void OpenUri(string uri)
-    {
-        try { Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); }
-        catch { }
-    }
-
-    // ============================================================
-    // ① 资源管理器无限重启
-    // ============================================================
-    private void OpenControlPanel_Click(object? sender, RoutedEventArgs e)
-    {
-        Log("打开控制面板（时钟和区域 → 更改时区 → 确定即可）");
-        OpenUri("control.exe");
-    }
-
-    private void RestartExplorer_Click(object? sender, RoutedEventArgs e)
-    {
-        Log("正在重启 Windows 资源管理器…");
-        try
-        {
-            Process.Start(new ProcessStartInfo(
-                "cmd.exe",
-                "/c taskkill /f /im explorer.exe & start explorer.exe")
-            {
-                UseShellExecute = true,
-                CreateNoWindow = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            Log($"重启资源管理器失败: {ex.Message}");
-        }
-    }
-
-    // ============================================================
-    // ② 系统更新后闪屏
-    // ============================================================
-    private void ListUpdates_Click(object? sender, RoutedEventArgs e)
-    {
-        Log("正在列出已安装更新（供卸载参考）…");
-        try
-        {
-            Process.Start(new ProcessStartInfo(
-                "cmd.exe",
-                "/k powershell -NoProfile -Command \"Get-HotFix | Sort-Object InstalledOn -Descending | Format-Table HotFixID,Description,InstalledOn -AutoSize & pause\"")
-            {
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            Log($"列出更新失败: {ex.Message}");
-        }
-    }
-
-    private void OpenUpdateHistory_Click(object? sender, RoutedEventArgs e)
-    {
-        Log("打开 Windows 更新历史");
-        OpenUri("ms-settings:windowsupdate-history");
-    }
-
-    // ============================================================
-    // ④ 网络重置
-    // ============================================================
-    private void ResetNetwork_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!IsAdmin())
-        {
-            Log("网络重置需要管理员权限，请右键程序 → 以管理员身份运行");
-            return;
-        }
-
-        Log("执行 netsh winsock reset（完成后需重启电脑）");
-        try
-        {
-            Process.Start(new ProcessStartInfo("cmd.exe", "/k netsh winsock reset & pause")
-            {
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            Log($"网络重置失败: {ex.Message}");
-        }
-    }
-
-    // ============================================================
-    // ⑤ 图标缓存
-    // ============================================================
-    private void RebuildIconCache_Click(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var iconCache = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "IconCache.db");
-
-            if (File.Exists(iconCache))
-            {
-                File.Delete(iconCache);
-                Log("已删除 IconCache.db");
-            }
-            else
-            {
-                Log("未找到 IconCache.db（可能已不存在）");
-            }
-
-            Process.Start(new ProcessStartInfo(
-                "cmd.exe",
-                "/c taskkill /f /im explorer.exe & start explorer.exe")
-            {
-                UseShellExecute = true,
-                CreateNoWindow = true,
-            });
-            Log("正在重启资源管理器以重建图标缓存");
-        }
-        catch (Exception ex)
-        {
-            Log($"重建图标缓存失败: {ex.Message}");
-        }
-    }
-
-    // ============================================================
-    // ⑥ 系统文件修复
-    // ============================================================
-    private void RepairSystemFiles_Click(object? sender, RoutedEventArgs e)
-    {
-        if (!IsAdmin())
-        {
-            Log("系统文件修复需要管理员权限，请右键程序 → 以管理员身份运行");
-            return;
-        }
-
-        Log("启动 SFC + DISM 修复（新窗口执行）");
-        try
-        {
-            Process.Start(new ProcessStartInfo(
-                "cmd.exe",
-                "/k echo ===== SFC 系统文件检查 ===== & sfc /scannow & echo. & echo ===== DISM 组件修复 ===== & DISM /Online /Cleanup-Image /RestoreHealth & echo. & echo 全部完成，按任意键关闭 & pause")
-            {
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            Log($"启动修复失败: {ex.Message}");
-        }
     }
 }

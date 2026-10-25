@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SBtools.Services;
@@ -19,6 +20,24 @@ public class OptimizationItem
     public string Name { get; init; } = "";
     public string Description { get; init; } = "";
     public RiskLevel Risk { get; init; } = RiskLevel.Safe;
+
+    /// <summary>内联应用脚本（优先于 switch 映射，供目录条目使用）。</summary>
+    public string? Apply { get; init; }
+    public string? Revert { get; init; }
+    public string? Check { get; init; }
+    /// <summary>是否需要重启生效。</summary>
+    public bool Restart { get; init; }
+    public bool HasRevert => Revert != null;
+    public string RiskText => Risk switch
+    {
+        RiskLevel.Safe => "安全", RiskLevel.Medium => "中等", _ => "高级"
+    };
+    public Avalonia.Media.IBrush RiskBrush => Risk switch
+    {
+        RiskLevel.Safe => Avalonia.Media.Brush.Parse("#22AA22"),
+        RiskLevel.Medium => Avalonia.Media.Brush.Parse("#FFAA00"),
+        _ => Avalonia.Media.Brush.Parse("#FF5555")
+    };
 }
 
 public static class SystemOptimizer
@@ -175,6 +194,300 @@ public static class SystemOptimizer
                 Name = "清理交付优化缓存",
                 Description = "删除 Windows 更新分发的临时文件",
                 Risk = RiskLevel.Safe },
+
+        // ============ 界面与体验（12）============
+        new() { Id = "ui_menu_delay", Category = "界面与体验",
+                Name = "菜单弹出零延迟", Description = "右键/下拉菜单立即出现（默认 400ms 延迟）",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 400 /f"),
+                Check = WrapCheckRegistryEquals(@"HKCU:\Control Panel\Desktop", "MenuShowDelay", 0) },
+        new() { Id = "ui_min_anim", Category = "界面与体验",
+                Name = "关闭窗口最小化动画", Description = "去掉最小化/还原的缩放动画，响应更快",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\\WindowMetrics\" /v MinAnimate /t REG_SZ /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\\WindowMetrics\" /v MinAnimate /t REG_SZ /d 1 /f") },
+        new() { Id = "ui_taskbar_left", Category = "界面与体验",
+                Name = "任务栏图标居左（Win11）", Description = "开始按钮和图标对齐屏幕左侧，回到 Win10 布局",
+                Restart = true,
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarAl /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarAl /t REG_DWORD /d 1 /f") },
+        new() { Id = "ui_taskbar_search", Category = "界面与体验",
+                Name = "任务栏搜索改为图标", Description = "大搜索框缩成图标，释放任务栏空间",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v SearchboxTaskbarMode /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v SearchboxTaskbarMode /t REG_DWORD /d 3 /f") },
+        new() { Id = "ui_taskbar_taskview", Category = "界面与体验",
+                Name = "隐藏任务视图按钮", Description = "去掉任务栏上的「任务视图」图标",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowTaskViewButton /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowTaskViewButton /t REG_DWORD /d 1 /f") },
+        new() { Id = "ui_taskbar_chat", Category = "界面与体验",
+                Name = "隐藏任务栏聊天图标", Description = "去掉任务栏的 Teams/聊天按钮",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarMn /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarMn /t REG_DWORD /d 1 /f") },
+        new() { Id = "ui_classic_menu", Category = "界面与体验",
+                Name = "恢复 Win10 经典右键菜单（Win11）", Description = "右键直接显示完整菜单，不用点「显示更多选项」",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32\" /ve /f"),
+                Revert = WrapCommand("reg delete \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\" /f") },
+        new() { Id = "ui_lockscreen_focus", Category = "界面与体验",
+                Name = "关闭锁屏 Windows 聚焦广告", Description = "锁屏不再推送必应推广内容",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v RotatingLockScreenEnabled /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v RotatingLockScreenEnabled /t REG_DWORD /d 1 /f") },
+        new() { Id = "ui_sticky_keys", Category = "界面与体验",
+                Name = "关闭粘滞键连按触发", Description = "连按 5 次 Shift 不再弹出粘滞键提示",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Accessibility\\StickyKeys\" /v Flags /t REG_SZ /d 506 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Accessibility\\StickyKeys\" /v Flags /t REG_SZ /d 510 /f") },
+        new() { Id = "ui_show_ext", Category = "界面与体验",
+                Name = "显示文件扩展名", Description = "资源管理器显示 .txt/.exe 等后缀，防伪装病毒",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 1 /f"),
+                Check = WrapCheckRegistryEquals(@"HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0) },
+        new() { Id = "ui_show_hidden", Category = "界面与体验",
+                Name = "显示隐藏文件", Description = "显示带隐藏属性的文件（谨慎使用）",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Hidden /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Hidden /t REG_DWORD /d 2 /f") },
+        new() { Id = "ui_explorer_thispc", Category = "界面与体验",
+                Name = "资源管理器默认打开「此电脑」", Description = "打开资源管理器直接进此电脑而不是主页",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v LaunchTo /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v LaunchTo /t REG_DWORD /d 2 /f") },
+
+        // ============ 网络优化（12）============
+        new() { Id = "net_dns_aliyun", Category = "网络优化",
+                Name = "DNS 改为阿里+腾讯", Description = "223.5.5.5 / 119.29.29.29，国内解析更快更稳",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("Get-NetAdapter | Where-Object Status -eq 'Up' | Set-DnsClientServerAddress -ServerAddresses '223.5.5.5','119.29.29.29'"),
+                Revert = WrapCommand("Get-NetAdapter | Where-Object Status -eq 'Up' | Set-DnsClientServerAddress -ResetServerAddresses") },
+        new() { Id = "net_do_off", Category = "网络优化",
+                Name = "关闭更新传递优化（P2P 上传）", Description = "不再给陌生设备上传 Windows 更新，节省上行带宽",
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization\" /v DODownloadMode /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization\" /v DODownloadMode /f") },
+        new() { Id = "net_qos_limit0", Category = "网络优化",
+                Name = "解除 QoS 保留带宽限制", Description = "系统默认保留 20% 带宽，改为 0",
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Psched\" /v NonBestEffortLimit /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Psched\" /v NonBestEffortLimit /f") },
+        new() { Id = "net_ipv6_off", Category = "网络优化",
+                Name = "关闭网卡 IPv6（仅家用网络）", Description = "解决部分路由器 IPv6 异常导致的网页卡顿",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("Get-NetAdapter | Disable-NetAdapterBinding -ComponentID ms_tcpip6 -ErrorAction SilentlyContinue"),
+                Revert = WrapCommand("Get-NetAdapter | Enable-NetAdapterBinding -ComponentID ms_tcpip6 -ErrorAction SilentlyContinue") },
+        new() { Id = "net_nagle", Category = "网络优化",
+                Name = "禁用 Nagle 算法（降低游戏延迟）", Description = "减少小包合并等待，游戏/远程响应更快",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("Get-NetAdapter | ForEach-Object { $k=\"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\\"+$_.InterfaceGuid; Set-ItemProperty $k TcpAckFrequency 1 -Type DWord -Force -EA SilentlyContinue; Set-ItemProperty $k TCPNoDelay 1 -Type DWord -Force -EA SilentlyContinue }"),
+                Revert = WrapCommand("Get-NetAdapter | ForEach-Object { $k=\"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\\"+$_.InterfaceGuid; Remove-ItemProperty $k TcpAckFrequency -EA SilentlyContinue; Remove-ItemProperty $k TCPNoDelay -EA SilentlyContinue }") },
+        new() { Id = "net_flushdns", Category = "网络优化",
+                Name = "刷新 DNS 解析缓存", Description = "清掉错误的域名缓存，解决「部分网站打不开」",
+                Apply = WrapCommand("Clear-DnsClientCache") },
+        new() { Id = "net_winsock", Category = "网络优化",
+                Name = "重置 Winsock 网络栈", Description = "修复代理/加速器残留导致的全网上不了",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("netsh winsock reset") },
+        new() { Id = "net_ip_reset", Category = "网络优化",
+                Name = "重置 TCP/IP 协议栈", Description = "解决 IP 配置损坏、未识别网络",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("netsh int ip reset") },
+        new() { Id = "net_adapter_power", Category = "网络优化",
+                Name = "关闭网卡节能省电", Description = "避免网卡休眠导致掉线/延迟抖动",
+                Apply = WrapCommand("Get-NetAdapter | Disable-NetAdapterPowerManagement -NoRestart -ErrorAction SilentlyContinue"),
+                Revert = WrapCommand("Get-NetAdapter | Enable-NetAdapterPowerManagement -NoRestart -ErrorAction SilentlyContinue") },
+        new() { Id = "net_proxy_clear", Category = "网络优化",
+                Name = "清空系统代理设置", Description = "清掉加速器/梯子残留的代理，恢复直连",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v ProxyEnable /t REG_DWORD /d 0 /f; netsh winhttp reset proxy") },
+        new() { Id = "net_time_ntp", Category = "网络优化",
+                Name = "时间同步改阿里云 NTP", Description = "国内 NTP 服务器，校时更快更准",
+                Apply = WrapCommand("w32tm /config /syncfromflags:manual /manualpeerlist:ntp.aliyun.com /update; w32tm /resync") },
+        new() { Id = "net_rss", Category = "网络优化",
+                Name = "开启网卡 RSS 接收缩放", Description = "多核分摊网络中断，大流量下降低 CPU 占用",
+                Apply = WrapCommand("Get-NetAdapterRss -ErrorAction SilentlyContinue | Enable-NetAdapterRss -NoRestart -ErrorAction SilentlyContinue"),
+                Revert = WrapCommand("Get-NetAdapterRss -ErrorAction SilentlyContinue | Disable-NetAdapterRss -NoRestart -ErrorAction SilentlyContinue") },
+
+        // ============ 电源与续航（10）============
+        new() { Id = "pw_monitor_never", Category = "电源与续航",
+                Name = "插电时屏幕永不熄灭", Description = "接电源时关闭自动息屏（演示/挂机场景）",
+                Apply = WrapCommand("powercfg /change monitor-timeout-ac 0"),
+                Revert = WrapCommand("powercfg /change monitor-timeout-ac 15") },
+        new() { Id = "pw_sleep_never", Category = "电源与续航",
+                Name = "插电时永不睡眠", Description = "接电源时不自动睡眠，下载/挂机不断",
+                Apply = WrapCommand("powercfg /change standby-timeout-ac 0"),
+                Revert = WrapCommand("powercfg /change standby-timeout-ac 30") },
+        new() { Id = "pw_usb_suspend_off", Category = "电源与续航",
+                Name = "关闭 USB 选择性暂停", Description = "USB 设备不掉线，键鼠/声卡不瞬间卡顿",
+                Apply = WrapCommand("powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0; powercfg /setactive SCHEME_CURRENT"),
+                Revert = WrapCommand("powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 2; powercfg /setactive SCHEME_CURRENT") },
+        new() { Id = "pw_hibernate_off", Category = "电源与续航",
+                Name = "关闭休眠（释放 C 盘空间）", Description = "删除 hiberfil.sys，约等于内存大小的空间",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("powercfg /h off"),
+                Revert = WrapCommand("powercfg /h on") },
+        new() { Id = "pw_hibernate_reduced", Category = "电源与续航",
+                Name = "休眠文件压缩为 40%", Description = "保留休眠但 hiberfil.sys 只占 40% 内存",
+                Apply = WrapCommand("powercfg /h /type reduced"),
+                Revert = WrapCommand("powercfg /h /type full") },
+        new() { Id = "pw_faststartup_off", Category = "电源与续航",
+                Name = "关闭快速启动", Description = "解决关机变重启/唤醒异常/双系统时间错乱",
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power\" /v HiberbootEnabled /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power\" /v HiberbootEnabled /t REG_DWORD /d 1 /f") },
+        new() { Id = "pw_cpu_min", Category = "电源与续航",
+                Name = "CPU 最低状态 100%（插电）", Description = "避免降频卡顿，台式机/游戏本适用",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100; powercfg /setactive SCHEME_CURRENT"),
+                Revert = WrapCommand("powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5; powercfg /setactive SCHEME_CURRENT") },
+        new() { Id = "pw_disk_never", Category = "电源与续航",
+                Name = "硬盘永不休眠（插电）", Description = "机械盘不停转，避免唤醒等待",
+                Apply = WrapCommand("powercfg /change disk-timeout-ac 0"),
+                Revert = WrapCommand("powercfg /change disk-timeout-ac 20") },
+        new() { Id = "pw_plan_balanced", Category = "电源与续航",
+                Name = "切回平衡电源计划", Description = "从高性能/节能切回平衡（日常推荐）",
+                Apply = WrapCommand("powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e"),
+                Revert = WrapCommand("powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c") },
+        new() { Id = "pw_plan_saver", Category = "电源与续航",
+                Name = "切换节能电源计划", Description = "笔记本外出临时续航救急",
+                Apply = WrapCommand("powercfg /setactive a1841308-3541-4fab-bc81-f71556f20b4a"),
+                Revert = WrapCommand("powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e") },
+
+        // ============ 游戏性能（9）============
+        new() { Id = "game_dvr_off", Category = "游戏性能",
+                Name = "关闭 GameDVR 录制", Description = "去掉后台录制开销，游戏帧数更稳",
+                Apply = WrapCommand("reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 1 /f") },
+        new() { Id = "game_bgcap", Category = "游戏性能",
+                Name = "关闭后台录像捕获", Description = "Win+G 后台录制彻底关闭",
+                Apply = WrapCommand("reg add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR\" /v AppCaptureEnabled /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR\" /v AppCaptureEnabled /t REG_DWORD /d 1 /f") },
+        new() { Id = "game_hags", Category = "游戏性能",
+                Name = "开启硬件加速 GPU 调度（HAGS）", Description = "降低延迟提升帧率，需显卡支持",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 2 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 1 /f") },
+        new() { Id = "game_mmcss", Category = "游戏性能",
+                Name = "多媒体调度偏向前台（10%）", Description = "CPU 只留 10% 给后台多媒体服务",
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v SystemResponsiveness /t REG_DWORD /d 10 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v SystemResponsiveness /t REG_DWORD /d 20 /f") },
+        new() { Id = "game_tasks", Category = "游戏性能",
+                Name = "游戏任务优先级调高", Description = "MMCSS Games 任务优先级 6 / GPU 优先级 8",
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v Priority /t REG_DWORD /d 6 /f; reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"GPU Priority\" /t REG_DWORD /d 8 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v Priority /t REG_DWORD /d 2 /f; reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"GPU Priority\" /t REG_DWORD /d 8 /f") },
+        new() { Id = "game_fse", Category = "游戏性能",
+                Name = "禁用全屏优化", Description = "独占全屏，降低输入延迟（个别游戏更稳）",
+                Apply = WrapCommand("reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 2 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 0 /f") },
+        new() { Id = "game_net_throttle", Category = "游戏性能",
+                Name = "解除网络节流（游戏延迟）", Description = "关闭 MMCSS 每毫秒 10 包的网络限流",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 4294967295 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f") },
+        new() { Id = "game_win32_priority", Category = "游戏性能",
+                Name = "前台程序优先级最高", Description = "Win32PrioritySeparation=38，前台获得更多 CPU 时间",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 38 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 2 /f") },
+        new() { Id = "game_mouse_accel", Category = "游戏性能",
+                Name = "关闭鼠标加速", Description = "指针移动与手移 1:1，FPS 玩家必备",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 0 /f; reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 0 /f; reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 1 /f; reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 6 /f; reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 10 /f") },
+
+        // ============ 安全加固（10）============
+        new() { Id = "sec_autoreboot", Category = "安全加固",
+                Name = "关闭蓝屏自动重启", Description = "蓝屏时停住显示错误代码，便于排查",
+                Apply = WrapCommand("wmic recoveros set AutoReboot=False") },
+        new() { Id = "sec_firewall_on", Category = "安全加固",
+                Name = "确保防火墙全开", Description = "三个配置文件全部启用防火墙",
+                Apply = WrapCommand("netsh advfirewall set allprofiles state on"),
+                Revert = WrapCommand("netsh advfirewall set allprofiles state off") },
+        new() { Id = "sec_remote_registry", Category = "安全加固",
+                Name = "禁用远程注册表服务", Description = "阻止他人远程改你的注册表",
+                Apply = WrapServiceDisable("RemoteRegistry"),
+                Revert = WrapServiceEnable("RemoteRegistry", "Manual") },
+        new() { Id = "sec_admin_share", Category = "安全加固",
+                Name = "关闭默认管理共享", Description = "关闭 C$/D$ 等默认共享，减少内网攻击面",
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters\" /v AutoShareWks /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters\" /v AutoShareWks /t REG_DWORD /d 1 /f") },
+        new() { Id = "sec_rdp_off", Category = "安全加固",
+                Name = "关闭远程桌面服务端", Description = "不使用远程桌面时关闭，防爆破",
+                Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\" /v fDenyTSConnections /t REG_DWORD /d 0 /f") },
+        new() { Id = "sec_lsass", Category = "安全加固",
+                Name = "开启 LSASS 保护（RunAsPPL）", Description = "凭据进程受保护，防凭据转储",
+                Restart = true, Risk = RiskLevel.Medium,
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Lsa\" /v RunAsPPL /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Lsa\" /v RunAsPPL /t REG_DWORD /d 0 /f") },
+        new() { Id = "sec_restore_point", Category = "安全加固",
+                Name = "立即创建系统还原点", Description = "优化前先留一手，可回滚（在系统保护开启时有效）",
+                Apply = WrapCommand("Checkpoint-Computer -Description 'Vael优化前备份' -RestorePointType MODIFY_SETTINGS -ErrorAction SilentlyContinue") },
+        new() { Id = "sec_quick_scan", Category = "安全加固",
+                Name = "Defender 快速查杀", Description = "立即用 Windows Defender 扫描活跃威胁",
+                Apply = WrapCommand("Start-MpScan -ScanType QuickScan -ErrorAction SilentlyContinue") },
+        new() { Id = "sec_time_sync", Category = "安全加固",
+                Name = "强制时间重新同步", Description = "修复时间不对导致的 HTTPS/激活报错",
+                Apply = WrapCommand("w32tm /resync /force") },
+        new() { Id = "sec_uac_desktop", Category = "安全加固",
+                Name = "UAC 切换到安全桌面", Description = "UAC 提示在安全桌面显示，防伪造点击",
+                Apply = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\" /v PromptOnSecureDesktop /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\" /v PromptOnSecureDesktop /t REG_DWORD /d 0 /f") },
+
+        // ============ 输入与设备（6）============
+        new() { Id = "dev_numlock", Category = "输入与设备",
+                Name = "开机默认开启小键盘", Description = "登录后 NumLock 自动亮",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Keyboard\" /v InitialKeyboardIndicators /t REG_SZ /d 2147483650 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Keyboard\" /v InitialKeyboardIndicators /t REG_SZ /d 2147483648 /f") },
+        new() { Id = "dev_keyboard_fast", Category = "输入与设备",
+                Name = "键盘重复速度最快", Description = "按住按键的重复延迟最短、速度最快",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Keyboard\" /v KeyboardDelay /t REG_SZ /d 0 /f; reg add \"HKCU\\Control Panel\\Keyboard\" /v KeyboardSpeed /t REG_SZ /d 31 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Keyboard\" /v KeyboardDelay /t REG_SZ /d 1 /f; reg add \"HKCU\\Control Panel\\Keyboard\" /v KeyboardSpeed /t REG_SZ /d 31 /f") },
+        new() { Id = "dev_wheel_lines", Category = "输入与设备",
+                Name = "滚轮一次滚 6 行", Description = "默认 3 行改 6 行，浏览更快",
+                Apply = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\" /v WheelScrollLines /t REG_SZ /d 6 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Control Panel\\Desktop\" /v WheelScrollLines /t REG_SZ /d 3 /f") },
+        new() { Id = "dev_dark_mode", Category = "输入与设备",
+                Name = "系统深色模式", Description = "系统和应用界面改为深色主题",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v AppsUseLightTheme /t REG_DWORD /d 0 /f; reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v SystemUseLightTheme /t REG_DWORD /d 0 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v AppsUseLightTheme /t REG_DWORD /d 1 /f; reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v SystemUseLightTheme /t REG_DWORD /d 1 /f") },
+        new() { Id = "dev_long_path", Category = "输入与设备",
+                Name = "解除 260 字符路径限制", Description = "支持长路径，告别「路径太长无法删除」",
+                Restart = true,
+                Apply = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 0 /f") },
+        new() { Id = "dev_ime_switch", Category = "输入与设备",
+                Name = "用 Ctrl+Shift 切换输入法", Description = "习惯旧版切换键的用户",
+                Apply = WrapCommand("reg add \"HKCU\\Keyboard Layout\\Toggle\" /v Language Hotkey /t REG_SZ /d 2 /f") },
+
+        // ============ 存储与维护（12）============
+        new() { Id = "maint_temp_user", Category = "存储与维护",
+                Name = "清理用户临时文件", Description = "删除 %TEMP% 下的临时文件",
+                Apply = WrapCommand("Remove-Item \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_temp_win", Category = "存储与维护",
+                Name = "清理系统临时文件", Description = "删除 C:\\Windows\\Temp 下的临时文件",
+                Apply = WrapCommand("Remove-Item \"$env:SystemRoot\\Temp\\*\" -Recurse -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_sd_download", Category = "存储与维护",
+                Name = "清理更新下载缓存", Description = "删除 SoftwareDistribution\\Download 下的更新包",
+                Apply = WrapCommand("Remove-Item \"$env:SystemRoot\\SoftwareDistribution\\Download\\*\" -Recurse -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_thumbnail", Category = "存储与维护",
+                Name = "清理缩略图缓存", Description = "删除 Explorer 缩略图数据库，修复缩略图错乱",
+                Apply = WrapCommand("taskkill /f /im explorer.exe; Remove-Item \"$env:LocalAppData\\Microsoft\\Windows\\Explorer\\thumbcache_*\" -Force -ErrorAction SilentlyContinue; Start-Process explorer.exe") },
+        new() { Id = "maint_icon", Category = "存储与维护",
+                Name = "重建图标缓存", Description = "删除 IconCache.db 并重启资源管理器，修复白图标",
+                Apply = WrapCommand("taskkill /f /im explorer.exe; Remove-Item \"$env:LocalAppData\\IconCache.db\" -Force -ErrorAction SilentlyContinue; Start-Process explorer.exe") },
+        new() { Id = "maint_dns", Category = "存储与维护",
+                Name = "清理 DNS 缓存", Description = "刷新本地域名解析缓存",
+                Apply = WrapCommand("Clear-DnsClientCache") },
+        new() { Id = "maint_recycle", Category = "存储与维护",
+                Name = "清空回收站", Description = "立即清空所有盘的回收站",
+                Apply = WrapCommand("Clear-RecycleBin -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_storage_sense", Category = "存储与维护",
+                Name = "开启存储感知自动清理", Description = "系统自动清理临时文件和回收站",
+                Apply = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy\" /v 01 /t REG_DWORD /d 1 /f"),
+                Revert = WrapCommand("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy\" /v 01 /t REG_DWORD /d 0 /f") },
+        new() { Id = "maint_do_cache", Category = "存储与维护",
+                Name = "清理传递优化缓存", Description = "删除为其他设备缓存的更新文件",
+                Apply = WrapCommand("Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_prefetch", Category = "存储与维护",
+                Name = "清理 Prefetch 预读取", Description = "删除预读取数据（仅排查启动问题时用）",
+                Apply = WrapCommand("Remove-Item \"$env:SystemRoot\\Prefetch\\*\" -Force -ErrorAction SilentlyContinue") },
+        new() { Id = "maint_sfc", Category = "存储与维护",
+                Name = "SFC 系统文件校验修复", Description = "扫描并修复损坏的系统文件（约 10-20 分钟）",
+                Apply = WrapCommand("sfc /scannow") },
+        new() { Id = "maint_dism", Category = "存储与维护",
+                Name = "DISM 组件存储修复", Description = "修复系统镜像，解决更新失败（约 10-30 分钟）",
+                Apply = WrapCommand("DISM /Online /Cleanup-Image /RestoreHealth") },
     };
 
     // ============================================================
@@ -220,7 +533,8 @@ public static class SystemOptimizer
     // ============================================================
     // 应用脚本
     // ============================================================
-    private static string GetApplyScript(string id) => id switch
+    private static string GetApplyScript(string id) =>
+        AllItems.FirstOrDefault(i => i.Id == id)?.Apply ?? id switch
     {
         "svc_diagtrack" => WrapServiceDisable("DiagTrack"),
         "svc_dmwappush" => WrapServiceDisable("dmwappushservice"),
@@ -298,7 +612,8 @@ if (Test-Path 'C:\Windows.old') {
     // ============================================================
     // 还原脚本
     // ============================================================
-    private static string GetRevertScript(string id) => id switch
+    private static string GetRevertScript(string id) =>
+        AllItems.FirstOrDefault(i => i.Id == id)?.Revert ?? id switch
     {
         "svc_diagtrack" => WrapServiceEnable("DiagTrack", "Automatic"),
         "svc_dmwappush" => WrapServiceEnable("dmwappushservice", "Manual"),
@@ -344,7 +659,8 @@ if (Test-Path 'C:\Windows.old') {
     // ============================================================
     // 检查脚本
     // ============================================================
-    private static string GetCheckScript(string id) => id switch
+    private static string GetCheckScript(string id) =>
+        AllItems.FirstOrDefault(i => i.Id == id)?.Check ?? id switch
     {
         "svc_diagtrack" => WrapCheckServiceDisabled("DiagTrack"),
         "svc_dmwappush" => WrapCheckServiceDisabled("dmwappushservice"),

@@ -63,11 +63,33 @@ public partial class OptimizationView : UserControl
         AnimateIn(CategoryDetailView);
     }
 
+    private SystemToolsView? _toolsView;
+    private OptimizationCatalogView? _catalogView;
+    private ToolboxView? _toolboxView;
+
     private void SystemToolsCard_Click(object? sender, RoutedEventArgs e)
+    {
+        _toolsView ??= new SystemToolsView();
+        ShowHosted("系统工具", _toolsView);
+    }
+
+    private void CatalogCard_Click(object? sender, RoutedEventArgs e)
+    {
+        _catalogView ??= new OptimizationCatalogView();
+        ShowHosted("优化大全", _catalogView);
+    }
+
+    private void ToolboxCard_Click(object? sender, RoutedEventArgs e)
+    {
+        _toolboxView ??= new ToolboxView();
+        ShowHosted("实用工具箱", _toolboxView);
+    }
+
+    private void ShowHosted(string title, Control view)
     {
         CategoryCardsView.IsVisible = false;
         CategoryDetailView.IsVisible = true;
-        DetailTitle.Text = "系统工具";
+        DetailTitle.Text = title;
 
         ServicesPanel.IsVisible = false;
         AiPanel.IsVisible = false;
@@ -76,8 +98,8 @@ public partial class OptimizationView : UserControl
         CleanupPanel.IsVisible = false;
 
         SystemToolsHost.IsVisible = true;
-        if (SystemToolsHost.Content == null)
-            SystemToolsHost.Content = new SystemToolsView();
+        if (!ReferenceEquals(SystemToolsHost.Content, view))
+            SystemToolsHost.Content = view;
         AnimateIn(CategoryDetailView);
     }
 

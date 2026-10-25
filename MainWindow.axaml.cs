@@ -66,6 +66,11 @@ public partial class MainWindow : Window
         NavView.SelectedItem = NavView.MenuItems[0];
         ContentFrame.Navigate(typeof(FeaturesView));
 
+        // ★ Frame 真正换页后再扫描挂钩下拉动画
+        // （Frame.Navigate 延迟换内容，SelectionChanged 时 Content 还是旧页）
+        ContentFrame.GetObservable(ContentProperty)
+            .Subscribe(page => PopupAnimator.HookAll(page as Visual));
+
         _scheduler = new PlaybackScheduler(OnScheduleStart, OnScheduleStop);
         ApplyScheduleConfig();
 

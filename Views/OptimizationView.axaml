@@ -156,6 +156,32 @@
                         </StackPanel>
                     </Button>
 
+                    <Button Click="CatalogCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="⚡" FontSize="26" />
+                            <TextBlock Text="优化大全" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="实用优化 · 搜索 · 一键应用" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Click="ToolboxCard_Click" Classes="optCard"
+                            Width="240" Height="118" Margin="0,0,14,14"
+                            Padding="0" HorizontalContentAlignment="Stretch"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="10">
+                        <StackPanel Margin="18,14" Spacing="6">
+                            <TextBlock Text="🧰" FontSize="26" />
+                            <TextBlock Text="实用工具箱" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="硬件检测 · 烤机 · 屏幕测试（参考图吧）" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                    </Button>
+
                 </WrapPanel>
             </ScrollViewer>
 

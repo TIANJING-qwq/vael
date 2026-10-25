@@ -52,14 +52,30 @@ public sealed class UpdateService
 
     /// <summary>是否存在已下载、待安装的更新。</summary>
     public bool HasPendingUpdate =>
-        Directory.Exists(PendingDir) && File.Exists(Path.Combine(PendingDir, "SBtools.exe"));
+        Directory.Exists(PendingDir) && File.Exists(PendingExePath);
+
+    /// <summary>待安装更新的主程序路径（Windows 为 SBtools.exe，其它平台无扩展名）。</summary>
+    private static string PendingExeName => OperatingSystem.IsWindows() ? "SBtools.exe" : "SBtools";
+
+    private static string PendingExePath => Path.Combine(PendingDir, PendingExeName);
+
+    /// <summary>当前运行时标识，用来挑选对应平台的更新包。</summary>
+    public static string CurrentRuntimeId()
+    {
+        var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture;
+        if (OperatingSystem.IsWindows()) return arch == System.Runtime.InteropServices.Architecture.Arm64 ? "win-arm64" : "win-x64";
+        if (OperatingSystem.IsLinux())   return arch == System.Runtime.InteropServices.Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+        if (OperatingSystem.IsMacOS())   return arch == System.Runtime.InteropServices.Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+        return "win-x64";
+    }
 
     private UpdateService()
     {
         _updater = new UpdatumManager(GithubOwner, GithubRepo)
         {
             // ★ 只匹配 ZIP（忽略 Setup.exe）
-            AssetRegexPattern = @"Vael.*win-x64.*\.zip$",
+            // ★ 按当前平台过滤；DownloadAsync 里还会再精确匹配一次 RID
+            AssetRegexPattern = @$"Vael.*{CurrentRuntimeId()}.*\.zip$",
             DownloadProgressUpdateFrequencySeconds = 0.3,
         };
     }
@@ -126,17 +142,24 @@ public sealed class UpdateService
                 return false;
             }
 
-            // ★ 优先选 ZIP（忽略 Setup.exe）
+            // ★ 按平台挑选对应资产（不能再取第一个 zip，否则会拿到别的平台包）
+            var rid = CurrentRuntimeId();
             var asset = release.Assets.FirstOrDefault(a =>
-                a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+                            a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                            a.Name.Contains(rid, StringComparison.OrdinalIgnoreCase))
+                        ?? release.Assets.FirstOrDefault(a =>
+                            a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                            a.Name.Contains(PlatformInfo.Name, StringComparison.OrdinalIgnoreCase));
 
             if (asset == null)
             {
-                LastError = "没有找到 .zip 资产";
+                LastError = $"Release 里没有匹配当前平台（{rid}）的 .zip 资产";
                 LogService.Log(LastError, "更新");
                 DownloadCompleted?.Invoke(false);
                 return false;
             }
+
+            LogService.Log($"已选择资产: {asset.Name}（当前平台 {rid}）", "更新");
 
             var originalUrl = asset.BrowserDownloadUrl;
             var proxy = ConfigManager.Instance.UpdateProxy ?? "";
@@ -175,18 +198,23 @@ public sealed class UpdateService
                 return false;
             }
 
-            // 3. 找到新的主 exe
-            var newExe = Path.Combine(extractDir, "SBtools.exe");
+            // 3. 找到新的主程序（Windows 为 SBtools.exe；其它平台是无扩展名的可执行文件）
+            var exeName = OperatingSystem.IsWindows() ? "SBtools.exe" : "SBtools";
+            var newExe = Path.Combine(extractDir, exeName);
             if (!File.Exists(newExe))
             {
-                newExe = Directory.GetFiles(extractDir, "SBtools.exe", SearchOption.AllDirectories)
+                newExe = Directory.GetFiles(extractDir, exeName, SearchOption.AllDirectories)
                     .FirstOrDefault() ?? "";
             }
 
             if (string.IsNullOrEmpty(newExe) || !File.Exists(newExe))
             {
-                LastError = "ZIP 里没有 SBtools.exe";
+                LastError = $"ZIP 里没有主程序 {exeName}（平台不匹配？当前 {CurrentRuntimeId()}）";
                 LogService.Log(LastError, "更新");
+
+                // 清理这次解压出来的垃圾，避免残留占空间
+                try { Directory.Delete(extractDir, true); } catch { }
+
                 DownloadCompleted?.Invoke(false);
                 return false;
             }
@@ -269,16 +297,25 @@ public sealed class UpdateService
             // 当前程序目录
             var currentExe = Environment.ProcessPath;
             if (string.IsNullOrEmpty(currentExe))
-                currentExe = Path.Combine(AppContext.BaseDirectory, "SBtools.exe");
+                currentExe = Path.Combine(AppContext.BaseDirectory, PendingExeName);
 
             var targetDir = Path.GetDirectoryName(currentExe)!;
             LogService.Log($"更新目标目录: {targetDir}", "更新");
+
+            // ★ 非 Windows 没有 cmd/bat 替换脚本，只能提示手动更新
+            if (!OperatingSystem.IsWindows())
+            {
+                LastError = $"当前平台（{CurrentRuntimeId()}）不支持自动安装更新，请手动下载新版本覆盖";
+                LogService.Log(LastError, "更新");
+                InstallCompleted?.Invoke(false);
+                return false;
+            }
 
             var batPath = Path.Combine(Path.GetTempPath(),
                 $"Vael_update_{Guid.NewGuid():N}.bat");
 
             var batContent = BuildUpdateScript(
-                PendingDir, targetDir, Path.Combine(targetDir, "SBtools.exe"), "");
+                PendingDir, targetDir, currentExe, "");
             File.WriteAllText(batPath, batContent, Encoding.ASCII);
             progress?.Report(0.55);
 
