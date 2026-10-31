@@ -106,6 +106,13 @@ public sealed class UpdateService
         {
             var hasUpdate = await _updater.CheckForUpdatesAsync();
 
+            // ★ 下载/安装进行中：直接返回，避免并发触发第二条更新流程
+            if (Busy)
+            {
+                LogService.Log("更新流程进行中，跳过本次检查", "更新");
+                return false;
+            }
+
             // 强制测试模式：忽略库内比较，视为有更新
             if (force && !hasUpdate && !string.IsNullOrEmpty(LatestVersion))
             {
@@ -137,11 +144,16 @@ public sealed class UpdateService
         }
     }
 
+    /// <summary>更新流程进行中（检查/下载/安装互斥，防自动检查与下载并发打架）</summary>
+    public bool Busy { get; private set; }
+
     // ============================================================
     // ★ 下载：ZIP → 解压 → 展平 → 暂存到 pending_update
     // ============================================================
     public async Task<bool> DownloadAsync()
     {
+        if (Busy) return false;
+        Busy = true;
         _downloadCts = new CancellationTokenSource();
         var token = _downloadCts.Token;
         LastError = null;
@@ -325,6 +337,7 @@ public sealed class UpdateService
         }
         finally
         {
+            Busy = false; // 失败/取消后允许重试（安装包成功路径随 Exit 退出，复位无影响）
             _downloadCts?.Dispose();
             _downloadCts = null;
         }
@@ -338,6 +351,10 @@ public sealed class UpdateService
         try
         {
             LogService.Log("开始安装更新...", "更新");
+
+            // 安装包路径已接管（下载完直接静默安装并退出），这里无事可做
+            if (Busy) { LogService.Log("安装包流程已接管，跳过", "更新"); return true; }
+            Busy = true;
             progress?.Report(0.10);
 
             if (!HasPendingUpdate)
