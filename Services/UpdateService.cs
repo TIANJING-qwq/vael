@@ -100,14 +100,21 @@ public sealed class UpdateService
         }
     }
 
-    public async Task<bool> CheckForUpdatesAsync()
+    public async Task<bool> CheckForUpdatesAsync(bool force = false)
     {
         try
         {
             var hasUpdate = await _updater.CheckForUpdatesAsync();
 
+            // 强制测试模式：忽略库内比较，视为有更新
+            if (force && !hasUpdate && !string.IsNullOrEmpty(LatestVersion))
+            {
+                LogService.Log($"强制测试更新：忽略版本比较（远端 {LatestVersion}）", "更新");
+                hasUpdate = true;
+            }
+
             // ★ 版本守卫：不信库内部比较，自行比较一次（杜绝"已是最新还更新"）
-            if (hasUpdate &&
+            if (hasUpdate && !force &&
                 Version.TryParse((LatestVersion ?? "").TrimStart('v', 'V'), out var latest) &&
                 Version.TryParse(CurrentVersion, out var cur) &&
                 latest <= cur)

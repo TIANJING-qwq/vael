@@ -186,19 +186,7 @@
                         Cursor="Hand"
                         Click="GitHubButton_Click" />
 
-                <Button Name="CheckUpdateButton"
-                        Content="检查更新"
-                        FontSize="12"
-                        Padding="12,6"
-                        MinWidth="80"
-                        HorizontalAlignment="Center"
-                        Background="Transparent"
-                        BorderBrush="#0067c0"
-                        BorderThickness="1"
-                        CornerRadius="16"
-                        Foreground="#0067c0"
-                        Cursor="Hand"
-                        Click="CheckUpdateButton_Click" />
+
             </StackPanel>
 
             <TextBlock Name="UpdateStatusText"

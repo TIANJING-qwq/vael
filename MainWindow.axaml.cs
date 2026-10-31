@@ -222,6 +222,7 @@ public partial class MainWindow : Window
                 case "backup":       ContentFrame.Navigate(typeof(BackupView));        break;
                 case "tools":        ContentFrame.Navigate(typeof(SystemToolsView));  break;
                 case "lab":          ContentFrame.Navigate(typeof(LabView));          break;
+                case "update":       ContentFrame.Navigate(typeof(UpdateView));       break;
                 case "gallery":      ContentFrame.Navigate(typeof(GalleryView));      break;
                 case "plugins":      ContentFrame.Navigate(typeof(PluginsView));      break;
                 case "settings":

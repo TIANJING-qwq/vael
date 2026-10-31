@@ -79,6 +79,12 @@
                     </fluent:NavigationViewItem.IconSource>
                 </fluent:NavigationViewItem>
 
+                <fluent:NavigationViewItem Content="更新" Tag="update">
+                    <fluent:NavigationViewItem.IconSource>
+                        <fluent:SymbolIconSource Symbol="Update" />
+                    </fluent:NavigationViewItem.IconSource>
+                </fluent:NavigationViewItem>
+
                 <fluent:NavigationViewItem Content="涩图合集" Tag="gallery">
                     <fluent:NavigationViewItem.IconSource>
                         <fluent:SymbolIconSource Symbol="Camera" />
