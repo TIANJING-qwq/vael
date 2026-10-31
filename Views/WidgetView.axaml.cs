@@ -96,6 +96,8 @@ public partial class WidgetView : UserControl
     /// <summary>点击开启，再次点击关闭</summary>
     private void Widget_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         var key = (sender as Button)?.Tag as string ?? "";
         if (_open.TryGetValue(key, out var exist))
         {
@@ -127,6 +129,13 @@ public partial class WidgetView : UserControl
             _ => throw new ArgumentException(key),
         };
         if (w != null) { _open[key] = w; w.Closed += (_, _) => _open.Remove(key); }
+        }
+        catch (Exception ex)
+        {
+            var k = (sender as Button)?.Tag as string ?? "?";
+            LogService.Log($"小组件[{k}]打开失败: {ex.Message}", "小组件");
+            MainWindow.PushToast("错误", $"小组件打开失败：{ex.Message}", 4);
+        }
     }
 
     private SimpleWidgetWindow New(SimpleWidgetWindow.Kind k, string title, Action<SimpleWidgetWindow.Config>? setup = null)
@@ -140,7 +149,12 @@ public partial class WidgetView : UserControl
 
     private WidgetWindow OpenPerf()
     {
-        if (!ConfigManager.Instance.DesktopWidgetEnabled) MainWindow.ToggleWidget();
+        // 以窗口实例为准（配置开关可能与实例不同步：如启动延迟未到、上次异常退出）
+        if (WidgetWindow.Instance == null)
+        {
+            ConfigManager.Instance.DesktopWidgetEnabled = true;
+            new WidgetWindow().Show();
+        }
         return WidgetWindow.Instance!;
     }
 
