@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
@@ -55,7 +57,6 @@ public partial class SimpleWidgetWindow : Window
     private readonly Image? _img;
     private readonly Polyline? _graph;
     private readonly List<double> _history = new();
-    private string[]? _imgs;
     private readonly Random _rnd = new();
     private System.Timers.Timer? _pomo;
     private DateTime _pomoEnd;
@@ -134,10 +135,12 @@ public partial class SimpleWidgetWindow : Window
         Content = _card;
         ApplyMaterial();
 
-        // 窗体空白处：左键拖动 / 右键配置
+        // 窗体：左键空白=拖动 / 右键=配置（控件自身动作已 Handled，不会到这）
         PointerPressed += (_, e) =>
         {
-            if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
+            var pt = e.GetCurrentPoint(this);
+            if (pt.Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
+            else if (pt.Properties.IsLeftButtonPressed) BeginMoveDrag(e);
         };
 
         _all.Add(this);
@@ -163,11 +166,11 @@ public partial class SimpleWidgetWindow : Window
             new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(400), Easing = new Avalonia.Animation.Easings.ExponentialEaseOut() },
         };
         _card.RenderTransformOrigin = new Avalonia.RelativePoint(0.5, 0.5, Avalonia.RelativeUnit.Relative);
-        Opacity = 0;
+        _card.Opacity = 0;
         _card.RenderTransform = TransformOperations.Parse("scale(0.88)");
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            Opacity = 1;
+            _card.Opacity = 1;
             _card.RenderTransform = TransformOperations.Parse("scale(1)");
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
@@ -176,17 +179,23 @@ public partial class SimpleWidgetWindow : Window
 
     private void TryLoadImages()
     {
+        // ★ 图库存放在 zip 包内（不解压），从 zip 读条目列表
         try
         {
-            var dir = Services.GalleryService.CacheDir;
-            _imgs = Array.FindAll(Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories),
-                f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                     f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                     f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                     f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase));
+            _zipEntries = System.IO.Compression.ZipFile.OpenRead(Services.GalleryService.ZipPath)
+                .Entries.Where(en => en.Length > 0 &&
+                    (en.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                     en.Name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                     en.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                     en.Name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ||
+                     en.Name.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase)))
+                .Select(en => en.FullName)
+                .ToArray();
         }
-        catch { _imgs = Array.Empty<string>(); }
+        catch { _zipEntries = Array.Empty<string>(); }
     }
+
+    private string[]? _zipEntries;
 
     private void Tick()
     {
@@ -282,11 +291,17 @@ public partial class SimpleWidgetWindow : Window
 
     private void Shuffle()
     {
-        if (_imgs == null || _imgs.Length == 0) { _sub.Text = "无缓存图（先在涩图合集下载）"; return; }
+        if (_zipEntries == null || _zipEntries.Length == 0) { _sub.Text = "无缓存图（先在涩图合集下载）"; return; }
         try
         {
-            _img!.Source = new Avalonia.Media.Imaging.Bitmap(_imgs[_rnd.Next(_imgs.Length)]);
-            _sub.Text = $"共 {_imgs.Length} 张 · 点击换图";
+            using var zip = System.IO.Compression.ZipFile.OpenRead(Services.GalleryService.ZipPath);
+            var entry = zip.GetEntry(_zipEntries[_rnd.Next(_zipEntries.Length)]);
+            if (entry == null) return;
+            using var ms = new MemoryStream();
+            using (var s = entry.Open()) s.CopyTo(ms);
+            ms.Position = 0;
+            _img!.Source = new Avalonia.Media.Imaging.Bitmap(ms);
+            _sub.Text = $"共 {_zipEntries.Length} 张 · 点击换图";
         }
         catch { }
     }
@@ -401,7 +416,7 @@ public partial class SimpleWidgetWindow : Window
                 break;
             case Kind.Gallery:
                 TryLoadImages(); Shuffle();
-                panel.Children.Add(new TextBlock { Text = $"已重新加载 {_imgs?.Length ?? 0} 张图" });
+                panel.Children.Add(new TextBlock { Text = $"已重新加载 {_zipEntries?.Length ?? 0} 张图" });
                 break;
             default:
                 panel.Children.Add(new TextBlock { Text = "该组件无配置项。\n左键=动作 · 标题栏拖动=移动 · 右键=本配置窗。" });

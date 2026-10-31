@@ -18,25 +18,25 @@ public partial class WidgetView : UserControl
         ("#D0142A4C", "深空蓝"), ("#C0FFFFFF", "毛玻璃"),
     };
 
-    // (单字, 名称, 说明, Key)：全部自实现功能，无系统程序跳转
+    // (Segoe Fluent 图标字形, 名称, 说明, Key)：全部自实现功能
     private static readonly (string, string, string, string)[] _widgets =
     {
-        ("能", "性能监控", "CPU/内存/网速", "perf"),
-        ("钟", "数字时钟", "大字时钟+星期", "clock"),
-        ("卷", "高考倒计时", "右键改时间", "gaokao"),
-        ("日", "自定义倒计时", "右键设目标", "countdown"),
-        ("图", "随机涩图", "点击换图", "gallery"),
-        ("骰", "骰子", "右键改面数", "dice"),
-        ("币", "抛硬币", "点击再抛", "coin"),
-        ("言", "一言卡片", "点击换句", "quote"),
-        ("点", "随机点名", "右键改人数", "roll"),
-        ("题", "随机题号", "右键改范围", "question"),
-        ("茄", "番茄钟", "右键改时长", "pomodoro"),
-        ("算", "计算器", "按键式", "calc"),
-        ("电", "电池", "电量+充电状态", "battery"),
-        ("盘", "磁盘余量", "C盘剩余", "disk"),
-        ("醒", "休息提醒", "20分钟循环", "rest"),
-        ("线", "内存曲线", "60秒历史曲线", "memwatch"),
+        ("\uE70F", "性能监控", "CPU/内存/网速", "perf"),
+        ("\uE823", "数字时钟", "大字时钟+星期", "clock"),
+        ("\uE787", "高考倒计时", "右键改时间", "gaokao"),
+        ("\uE91F", "自定义倒计时", "右键设目标", "countdown"),
+        ("\uE91B", "随机涩图", "点击换图", "gallery"),
+        ("\uE8FD", "骰子", "右键改面数", "dice"),
+        ("\uE8EC", "抛硬币", "点击再抛", "coin"),
+        ("\uE8BD", "一言卡片", "点击换句", "quote"),
+        ("\uE716", "随机点名", "右键改人数", "roll"),
+        ("\uE8A5", "随机题号", "右键改范围", "question"),
+        ("\uE91F", "番茄钟", "右键改时长", "pomodoro"),
+        ("\uE8EF", "计算器", "按键式", "calc"),
+        ("\uE83F", "电池", "电量+充电状态", "battery"),
+        ("\uE74E", "磁盘余量", "C盘剩余", "disk"),
+        ("\uE823", "休息提醒", "20分钟循环", "rest"),
+        ("\uE999", "内存曲线", "60秒历史曲线", "memwatch"),
     };
 
     private readonly Dictionary<string, Window> _open = new();
@@ -81,7 +81,8 @@ public partial class WidgetView : UserControl
                     VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = icon, FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.85 },
+                        new TextBlock { Text = icon, FontSize = 28, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.9,
+                                        FontFamily = new Avalonia.Media.FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets") },
                         new TextBlock { Text = name, FontSize = 13, FontWeight = Avalonia.Media.FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
                         new TextBlock { Text = desc, FontSize = 10, Opacity = 0.55, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
                     },
