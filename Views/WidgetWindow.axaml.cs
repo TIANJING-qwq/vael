@@ -16,6 +16,9 @@ public partial class WidgetWindow : Window
 {
     /// <summary>当前实例（主窗口开关用）</summary>
     public static WidgetWindow? Instance;
+
+    /// <summary>应用材质（由 SimpleWidgetWindow.MaterialHex 广播）</summary>
+    public void ApplyMaterial(string hex) => Card.Background = Avalonia.Media.Brush.Parse(hex);
     private PerformanceCounter? _cpu;
     private PerformanceCounter? _net;
     private readonly Stopwatch _sw = Stopwatch.StartNew();

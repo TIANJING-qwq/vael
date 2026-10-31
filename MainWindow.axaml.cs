@@ -74,10 +74,13 @@ public partial class MainWindow : Window
         _scheduler = new PlaybackScheduler(OnScheduleStart, OnScheduleStop);
         ApplyScheduleConfig();
 
-        // 桌面小组件（跟随设置自启，带入场动画）
+        // 桌面小组件（延迟到启动动画结束后再显示，避免启动期黑框/无响应）
         if (ConfigManager.Instance.DesktopWidgetEnabled)
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => new WidgetWindow().Show(),
-                Avalonia.Threading.DispatcherPriority.Loaded);
+            Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(3000);
+                try { if (ConfigManager.Instance.DesktopWidgetEnabled && WidgetWindow.Instance == null) new WidgetWindow().Show(); } catch { }
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
 
         this.AddHandler(
             PointerReleasedEvent,

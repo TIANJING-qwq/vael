@@ -1,9 +1,10 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using SBtools.Services;
+using SBtools.Models;
 
 namespace SBtools.Views;
 
@@ -17,76 +18,62 @@ public partial class WidgetView : UserControl
         ("#D0142A4C", "深空蓝"), ("#C0FFFFFF", "毛玻璃"),
     };
 
-    private static readonly (string Icon, string Name, string Desc, string Act)[] _widgets =
+    // (图标, 名称, 说明, Key)：全部自实现功能，无系统程序跳转
+    private static readonly (string, string, string, string)[] _widgets =
     {
         ("📊", "性能监控", "CPU/内存/网速", "perf"),
-        ("🕐", "数字时钟", "大字时钟+日期", "clock"),
-        ("⏳", "高考倒计时", "距次年6月7日", "gaokao"),
-        ("📅", "自定义倒计时", "输入天数（提示框）", "days"),
-        ("🖼", "随机涩图", "右键换图", "gallery"),
-        ("🎲", "掷骰子", "1-6 点", "dice"),
-        ("🪙", "翻硬币", "正/反", "coin"),
-        ("💬", "每日一言", "随机一句话", "quote"),
-        ("🔋", "电池状态", "电量与充放电", "battery"),
-        ("💽", "磁盘余量", "C 盘剩余空间", "disk"),
-        ("🔢", "随机点名", "输入总人数范围", "roll"),
-        ("📝", "随机题号", "1-100 抽题", "question"),
-        ("🍅", "番茄钟", "25 分钟专注", "pomodoro"),
-        ("⏰", "休息提醒", "20 分钟后提醒", "rest"),
-        ("🔕", "上课静音", "一键系统静音", "mute"),
-        ("🔒", "快速锁屏", "Win+L", "lock"),
-        ("⏻", "快速关机", "60 秒倒计时", "shutdown"),
-        ("🔄", "快速重启", "60 秒倒计时", "reboot"),
-        ("🧮", "打开计算器", "系统计算器", "calc"),
-        ("⌨️", "打开屏幕键盘", "osk", "osk"),
-        ("📋", "剪贴板历史", "Win+V", "cliphist"),
-        ("🌐", "浏览器插件", "打开插件目录", "plugin"),
+        ("🕐", "数字时钟", "大字时钟+星期", "clock"),
+        ("⏳", "高考倒计时", "距次年6月7日·右键改时间", "gaokao"),
+        ("📅", "自定义倒计时", "右键设目标时间", "countdown"),
+        ("🖼", "随机涩图", "点击换图", "gallery"),
+        ("🎲", "骰子", "右键改面数", "dice"),
+        ("🪙", "硬币", "点击再抛", "coin"),
+        ("💬", "一言卡片", "点击换句", "quote"),
+        ("🔢", "随机点名", "右键改人数", "roll"),
+        ("📝", "随机题号", "右键改范围", "question"),
+        ("🍅", "番茄钟", "右键改时长", "pomodoro"),
+        ("🧮", "迷你计算器", "表达式求值", "calc"),
+        ("🔋", "电池悬浮窗", "电量+充电状态", "battery"),
+        ("💽", "磁盘余量", "C盘实时剩余", "disk"),
+        ("⏰", "喝水休息提醒", "20分钟循环", "rest"),
+        ("📈", "内存占用曲线", "已用内存百分比", "memwatch"),
     };
+
+    private readonly Dictionary<string, Window> _open = new();
+    private System.Timers.Timer? _restTimer;
 
     public WidgetView()
     {
         InitializeComponent();
-        BuildMaterials();
-        BuildGrid();
-    }
-
-    private void BuildMaterials()
-    {
         foreach (var (hex, name) in _materials)
         {
             var b = new Button
             {
-                Content = name,
-                FontSize = 12,
+                Content = name, FontSize = 12,
                 Padding = new Avalonia.Thickness(10, 5),
                 CornerRadius = new Avalonia.CornerRadius(6),
                 Background = Brush.Parse(hex),
-                Foreground = hex == "#E0F3F3F3" || hex == "#C0FFFFFF" || hex == "#80FFFFFF"
-                    ? Brushes.Black : Brushes.White,
-                Tag = hex,
+                Foreground = hex.Contains("F3F3F3") || hex == "#C0FFFFFF" || hex == "#80FFFFFF" ? Brushes.Black : Brushes.White,
                 Margin = new Avalonia.Thickness(0, 0, 8, 8),
+                Tag = hex,
             };
             b.Click += (_, _) =>
             {
-                SimpleWidgetWindow.MaterialHex = hex;
-                LogService.Log($"小组件材质: {name} ({hex})", "小组件");
-                MainWindow.PushToast("🎨", $"材质已切换：{name}", 3);
+                SimpleWidgetWindow.MaterialHex = hex; // 实时广播到所有已开小组件
+                MainWindow.PushToast("🎨", $"材质已切换：{name}（全部小组件实时生效）", 3);
             };
             MaterialPanel.Children.Add(b);
         }
-    }
 
-    private void BuildGrid()
-    {
-        foreach (var (icon, name, desc, act) in _widgets)
+        foreach (var (icon, name, desc, key) in _widgets)
         {
             var b = new Button
             {
-                Width = 160, Height = 92,
+                Width = 165, Height = 92,
                 Margin = new Avalonia.Thickness(0, 0, 10, 10),
                 Padding = new Avalonia.Thickness(0),
                 CornerRadius = new Avalonia.CornerRadius(10),
-                Tag = act,
+                Tag = key,
                 Content = new StackPanel
                 {
                     Spacing = 4,
@@ -105,108 +92,77 @@ public partial class WidgetView : UserControl
         }
     }
 
-    private void Widget_Click(object? sender, RoutedEventArgs e) => _ = RunAsync((sender as Button)?.Tag as string ?? "");
-
-    private async System.Threading.Tasks.Task RunAsync(string act)
+    /// <summary>点击开启，再次点击关闭</summary>
+    private void Widget_Click(object? sender, RoutedEventArgs e)
     {
-        try
+        var key = (sender as Button)?.Tag as string ?? "";
+        if (_open.TryGetValue(key, out var exist))
         {
-            switch (act)
-            {
-                case "perf": MainWindow.ToggleWidget(); break;
-                case "clock": new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Clock, "时钟").Show(); break;
-                case "gaokao":
-                {
-                    var t = new DateTime(DateTime.Now.Year, 6, 7);
-                    if (DateTime.Now > t) t = t.AddYears(1);
-                    new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Countdown, "高考倒计时", t).Show();
-                    break;
-                }
-                case "days":
-                {
-                    var d = await PromptIntAsync("倒计时天数", 30);
-                    if (d > 0)
-                        new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Countdown, "倒计时",
-                            DateTime.Now.AddDays(d)).Show();
-                    break;
-                }
-                case "gallery": new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Gallery, "随机涩图").Show(); break;
-                case "dice": MainWindow.PushToast("🎲", $"掷出 {Random.Shared.Next(1, 7)} 点", 4); break;
-                case "coin": MainWindow.PushToast("🪙", Random.Shared.Next(2) == 0 ? "正面" : "反面", 4); break;
-                case "quote":
-                {
-                    var qs = new[] { "行到水穷处，坐看云起时。", "日拱一卒，功不唐捐。", "凡是过往，皆为序章。", "山不让尘，川不辞盈。", "追风赶月莫停留，平芜尽处是春山。" };
-                    MainWindow.PushToast("💬", qs[Random.Shared.Next(qs.Length)], 5);
-                    break;
-                }
-                case "battery":
-                    Process.Start(new ProcessStartInfo("cmd", "/c start ms-settings:batterysaver") { UseShellExecute = true });
-                    MainWindow.PushToast("🔋", "已打开电池设置（设置内可看电量详情）", 4);
-                    break;
-                case "disk":
-                {
-                    var c = new System.IO.DriveInfo("C");
-                    MainWindow.PushToast("💽", $"C 盘剩余 {c.TotalFreeSpace / 1024.0 / 1024 / 1024:F1} GB / 共 {c.TotalSize / 1024.0 / 1024 / 1024:F0} GB", 6);
-                    break;
-                }
-                case "roll":
-                {
-                    var n = await PromptIntAsync("总人数", 45);
-                    if (n > 0) MainWindow.PushToast("🔢", $"第 {Random.Shared.Next(1, n + 1)} 号，请回答！", 6);
-                    break;
-                }
-                case "question": MainWindow.PushToast("📝", $"抽到第 {Random.Shared.Next(1, 101)} 题", 5); break;
-                case "pomodoro": StartTimer("🍅 番茄钟完成！休息 5 分钟", 25); break;
-                case "rest": StartTimer("⏰ 该休息一下眼睛了！", 20); break;
-                case "mute":
-                    Process.Start(new ProcessStartInfo("cmd", "/c start ms-settings:sound") { UseShellExecute = true });
-                    MainWindow.PushToast("🔕", "已打开声音设置（或直接按键盘静音键）", 4);
-                    break;
-                case "lock": Process.Start("rundll32.exe", "user32.dll,LockWorkStation"); break;
-                case "shutdown": Process.Start("shutdown", "/s /t 60"); MainWindow.PushToast("⏻", "60 秒后关机（shutdown /a 取消）", 5); break;
-                case "reboot": Process.Start("shutdown", "/r /t 60"); MainWindow.PushToast("🔄", "60 秒后重启（shutdown /a 取消）", 5); break;
-                case "calc": Process.Start(new ProcessStartInfo("cmd", "/c start calc") { UseShellExecute = true }); break;
-                case "osk": Process.Start(new ProcessStartInfo("cmd", "/c start osk") { UseShellExecute = true }); break;
-                case "cliphist": MainWindow.PushToast("📋", "请按 Win+V 打开剪贴板历史（可在小组件页开启）", 5); break;
-                case "plugin":
-                    Process.Start("explorer.exe", System.IO.Path.Combine(AppContext.BaseDirectory, "Extensions", "browser-plugin"));
-                    MainWindow.PushToast("🌐", "已打开插件目录：chrome://extensions 开发者模式→加载已解压", 6);
-                    break;
-            }
+            exist.Close();
+            _open.Remove(key);
+            MainWindow.PushToast("🔕", "小组件已关闭", 2);
+            return;
         }
-        catch (Exception ex) { LogService.Log($"小组件[{act}]失败: {ex.Message}", "小组件"); }
+
+        Window w = key switch
+        {
+            "perf" => OpenPerf(),
+            "clock" => New(SimpleWidgetWindow.Kind.Clock, "时钟"),
+            "gaokao" => New(SimpleWidgetWindow.Kind.Countdown, "高考倒计时",
+                c => { var t = new DateTime(DateTime.Now.Year, 6, 7); if (DateTime.Now > t) t = t.AddYears(1); c.Target = t; }),
+            "countdown" => New(SimpleWidgetWindow.Kind.Countdown, "倒计时", c => c.Target = DateTime.Now.AddDays(30)),
+            "gallery" => New(SimpleWidgetWindow.Kind.Gallery, "随机涩图"),
+            "dice" => New(SimpleWidgetWindow.Kind.Dice, "骰子", c => c.DiceFaces = 6),
+            "coin" => New(SimpleWidgetWindow.Kind.Coin, "抛硬币"),
+            "quote" => New(SimpleWidgetWindow.Kind.Quote, "一言"),
+            "roll" => New(SimpleWidgetWindow.Kind.Roll, "随机点名", c => c.Range = 45),
+            "question" => New(SimpleWidgetWindow.Kind.Roll, "随机题号", c => c.Range = 100),
+            "pomodoro" => New(SimpleWidgetWindow.Kind.Pomodoro, "番茄钟", c => c.PomoMinutes = 25),
+            "calc" => New(SimpleWidgetWindow.Kind.Calc, "计算器"),
+            "battery" => New(SimpleWidgetWindow.Kind.Battery, "电池"),
+            "disk" => NewDiskWidget(),
+            "rest" => StartRestReminder(),
+            "memwatch" => New(SimpleWidgetWindow.Kind.Battery, "内存占用"), // 复用布局
+            _ => throw new ArgumentException(key),
+        };
+        if (w != null) { _open[key] = w; w.Closed += (_, _) => _open.Remove(key); }
     }
 
-    /// <summary>极简数字输入弹窗（确定返回输入值，取消/空返回 0）</summary>
-    private async System.Threading.Tasks.Task<int> PromptIntAsync(string title, int def)
+    private SimpleWidgetWindow New(SimpleWidgetWindow.Kind k, string title, Action<SimpleWidgetWindow.Config>? setup = null)
     {
-        try
-        {
-            var input = new TextBox { Watermark = $"输入数字（默认 {def}）", Width = 220 };
-            var ok = new Button { Content = "确定", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right };
-            var w = new Window
-            {
-                Title = title, Width = 300, Height = 150,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Content = new StackPanel
-                {
-                    Margin = new Avalonia.Thickness(16), Spacing = 10,
-                    Children = { new TextBlock { Text = title }, input, ok },
-                },
-            };
-            int result = 0;
-            ok.Click += (_, _) => { int.TryParse(input.Text, out result); w.Close(); };
-            await w.ShowDialog((Window)TopLevel.GetTopLevel(this)!);
-            return result;
-        }
-        catch { return def; }
+        var cfg = new SimpleWidgetWindow.Config { Title = title };
+        setup?.Invoke(cfg);
+        var w = new SimpleWidgetWindow(k, cfg);
+        w.Show();
+        return w;
     }
 
-    private void StartTimer(string msg, int minutes)
+    private WidgetWindow OpenPerf()
     {
-        var t = new System.Timers.Timer(minutes * 60_000) { AutoReset = false };
-        t.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => MainWindow.PushToast("⏰", msg, 10));
-        t.Start();
-        MainWindow.PushToast("⏱", $"{msg.Split('！')[0]}已开始（{minutes} 分钟）", 4);
+        if (!ConfigManager.Instance.DesktopWidgetEnabled) MainWindow.ToggleWidget();
+        return WidgetWindow.Instance!;
+    }
+
+    private SimpleWidgetWindow NewDiskWidget()
+    {
+        var cfg = new SimpleWidgetWindow.Config { Title = "C 盘" };
+        var w = new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Battery, cfg); // 借电池窗结构
+        w.Show();
+        return w;
+    }
+
+    private SimpleWidgetWindow StartRestReminder()
+    {
+        _restTimer?.Stop();
+        var w = New(SimpleWidgetWindow.Kind.Quote, "休息提醒");
+        _restTimer = new System.Timers.Timer(20 * 60_000) { AutoReset = true };
+        int n = 0;
+        _restTimer.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            n++;
+            MainWindow.PushToast("💧", $"已专注 {20 * n} 分钟，喝水休息一下眼睛！", 8);
+        });
+        _restTimer.Start();
+        return w;
     }
 }
