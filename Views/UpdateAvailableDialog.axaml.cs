@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
 using SBtools.Controls;
+using SBtools.Services;
 using System;
 using System.Threading.Tasks;
 
