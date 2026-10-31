@@ -17,6 +17,43 @@ public partial class FeaturesView : UserControl
     private string? _mountedDriveLetter;
     private int _dailyQuoteIndex = -1;
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        LoadRandomImage();
+    }
+
+    // ============================================================
+    // 涩图合集（功能页卡片入口 + 主页随机一图）
+    // ============================================================
+    private void GalleryTile_Click(object? sender, RoutedEventArgs e) => MainWindow.ShowGallery();
+
+    private void WidgetTile_Click(object? sender, RoutedEventArgs e) => MainWindow.ToggleWidget();
+
+    private void LoadRandomImage()
+    {
+        try
+        {
+            if (!GalleryService.HasCache || RandomImage.Source != null) return;
+
+            var dir = GalleryService.CacheDir;
+            var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
+            var imgs = Array.FindAll(files, f =>
+                f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase));
+            if (imgs.Length == 0) return;
+
+            var pick = imgs[Random.Shared.Next(imgs.Length)];
+            RandomImage.Source = new Avalonia.Media.Imaging.Bitmap(pick);
+        }
+        catch (Exception ex)
+        {
+            LogService.Log($"主页随机图加载失败: {ex.Message}", "功能");
+        }
+    }
+
     private static readonly string[] _dailyQuotes =
     {
         "行到水穷处，坐看云起时。",

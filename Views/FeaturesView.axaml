@@ -131,6 +131,50 @@
                     </Grid>
                 </Button>
 
+                <!-- 涩图合集 -->
+                <Button Click="GalleryTile_Click"
+                        Classes="card"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Padding="0"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,14">
+                        <TextBlock Grid.Column="0" Text="🖼" FontSize="22"
+                                   VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock Text="涩图合集" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="随机一图 · 每次打开都有惊喜" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="24" Opacity="0.45"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <!-- 桌面小组件 -->
+                <Button Click="WidgetTile_Click"
+                        Classes="card"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Padding="0"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,14">
+                        <TextBlock Grid.Column="0" Text="📊" FontSize="22"
+                                   VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock Text="桌面小组件" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="CPU / 内存 / 网速 悬浮窗（再次点击关闭）" FontSize="12" Opacity="0.55" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="24" Opacity="0.45"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
                 <!-- 每日一言（点击换一句） -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
@@ -147,6 +191,18 @@
                                    Opacity="0.85" />
                     </StackPanel>
                 </Border>
+
+                <!-- 随机涩图（主页底部，点击进入合集） -->
+                <Button Click="GalleryTile_Click" Classes="card"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Padding="0" Background="Transparent" BorderThickness="0" CornerRadius="12">
+                    <StackPanel Spacing="8" Margin="0,0,0,8">
+                        <TextBlock Text="随机一图 · 点击进入合集" FontSize="14" Opacity="0.6"/>
+                        <Border CornerRadius="12" ClipToBounds="True">
+                            <Image x:Name="RandomImage" Stretch="Uniform" MaxHeight="300"/>
+                        </Border>
+                    </StackPanel>
+                </Button>
 
             </StackPanel>
         </ScrollViewer>

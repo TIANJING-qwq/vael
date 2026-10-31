@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SBtools.Views.WidgetWindow"
+        Title="Vael 小组件"
+        Width="220" Height="150"
+        SystemDecorations="None"
+        ShowInTaskbar="False"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
+        Topmost="True">
+
+    <Border x:Name="Card"
+            Background="#C8202020"
+            CornerRadius="12"
+            BorderThickness="1"
+            BorderBrush="#33FFFFFF"
+            Margin="6"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="12,10">
+
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" x:Name="DragArea">
+                <TextBlock Grid.Column="0" Text="Vael 性能" FontSize="12" Opacity="0.7"/>
+                <Button Grid.Column="1" x:Name="CloseBtn" Content="✕" FontSize="10"
+                        Padding="4,1" Opacity="0.5" Click="CloseBtn_Click"/>
+            </Grid>
+
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
+                <TextBlock x:Name="CpuText"  Text="CPU  --%" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock x:Name="MemText"  Text="内存 --%" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock x:Name="NetText"  Text="网速 --" FontSize="12" Opacity="0.7"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="2" Text="拖动移动 · 右上角关闭" FontSize="10" Opacity="0.4"/>
+        </Grid>
+    </Border>
+</Window>

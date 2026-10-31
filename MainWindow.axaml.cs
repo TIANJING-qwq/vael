@@ -74,6 +74,11 @@ public partial class MainWindow : Window
         _scheduler = new PlaybackScheduler(OnScheduleStart, OnScheduleStop);
         ApplyScheduleConfig();
 
+        // 桌面小组件（跟随设置自启，带入场动画）
+        if (ConfigManager.Instance.DesktopWidgetEnabled)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => new WidgetWindow().Show(),
+                Avalonia.Threading.DispatcherPriority.Loaded);
+
         this.AddHandler(
             PointerReleasedEvent,
             OnGlobalPointerReleased,
@@ -668,6 +673,29 @@ public partial class MainWindow : Window
 
     /// <summary>供其它页面调用的「播放 CCTV」入口（恢复上次频道）</summary>
     public static void PlayCctv() => _instance?.TestPlayLastChannel();
+
+    /// <summary>功能页卡片入口：进入涩图合集（侧边栏已隐藏该项）</summary>
+    public static void ShowGallery()
+    {
+        if (_instance == null) return;
+        _instance.ContentFrame.Navigate(typeof(GalleryView));
+        PopupAnimator.HookAll(_instance.ContentFrame.Content as Visual);
+    }
+
+    /// <summary>桌面性能小组件开关</summary>
+    public static void ToggleWidget()
+    {
+        if (ConfigManager.Instance.DesktopWidgetEnabled)
+        {
+            ConfigManager.Instance.DesktopWidgetEnabled = false;
+            WidgetWindow.Instance?.Close();
+        }
+        else
+        {
+            ConfigManager.Instance.DesktopWidgetEnabled = true;
+            new WidgetWindow().Show();
+        }
+    }
 
     private void StartPlayer(string channelName, string toastTitle, string logSource)
     {

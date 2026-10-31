@@ -111,6 +111,13 @@ public class ConfigManager
         set { _data.ScheduleDays = value; Services.ScheduleConfig.Days = MaskToDays(value); Save(); }
     }
 
+    /// <summary>桌面性能小组件</summary>
+    public bool DesktopWidgetEnabled
+    {
+        get => _data.DesktopWidgetEnabled;
+        set { _data.DesktopWidgetEnabled = value; Save(); }
+    }
+
     internal static System.Collections.Generic.HashSet<System.DayOfWeek> MaskToDays(int mask)
     {
         var set = new System.Collections.Generic.HashSet<System.DayOfWeek>();
@@ -447,6 +454,7 @@ public class ConfigManager
         public int ScheduleStartMinutes { get; set; } = 19 * 60;
         public int ScheduleEndMinutes { get; set; } = 19 * 60 + 30;
         public int ScheduleDays { get; set; } = 0; // 位掩码 bit0=周日..bit6=周六；0=每天
+        public bool DesktopWidgetEnabled { get; set; } = false;
         public string ScheduleChannel { get; set; } = "CCTV-13 新闻";
 
         // ★ 播放器：上次频道 / 每个频道首选源

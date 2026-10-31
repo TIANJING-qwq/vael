@@ -85,12 +85,6 @@
                     </fluent:NavigationViewItem.IconSource>
                 </fluent:NavigationViewItem>
 
-                <fluent:NavigationViewItem Content="涩图合集" Tag="gallery">
-                    <fluent:NavigationViewItem.IconSource>
-                        <fluent:SymbolIconSource Symbol="Camera" />
-                    </fluent:NavigationViewItem.IconSource>
-                </fluent:NavigationViewItem>
-
                 <fluent:NavigationViewItem Content="插件" Tag="plugins">
                     <fluent:NavigationViewItem.IconSource>
                         <fluent:SymbolIconSource Symbol="AllApps" />
