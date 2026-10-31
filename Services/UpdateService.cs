@@ -163,8 +163,11 @@ public sealed class UpdateService
                 if (setup != null)
                 {
                     LogService.Log($"已选择安装包资产: {setup.Name}", "更新");
-                    var setupPath = Path.Combine(ConfigManager.AppDataDir,
-                        $"Vael_setup_{Guid.NewGuid():N}.exe");
+                    // ★ 减敏：固定文件名（随机名可执行文件是启发式恶意评分项）
+                    //   + 放 %TEMP% 而非 AppData\Roaming（AppData 落 exe 是高危特征）
+                    var setupPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                        "Vael_Setup.exe");
+                    try { System.IO.File.Delete(setupPath); } catch { }
 
                     await DownloadFileAsync(
                         (ConfigManager.Instance.UpdateProxy ?? "") + setup.BrowserDownloadUrl,
