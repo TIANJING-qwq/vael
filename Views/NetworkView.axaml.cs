@@ -66,6 +66,7 @@ public partial class NetworkView : UserControl
             ScheduleEnabledSwitch.IsChecked = s.Enabled;
             StartTimePicker.SelectedTime = s.StartTime;
             EndTimePicker.SelectedTime = s.EndTime;
+            InitDayButtons(ConfigManager.Instance.ScheduleDays);
 
             // 频道下拉框
             ScheduleChannelComboBox.Items.Clear();
@@ -99,7 +100,44 @@ public partial class NetworkView : UserControl
         }
 
         ScheduleStatusText.Text =
-            $"已启用：每天 {FormatTime(s.StartTime)} 至 {FormatTime(s.EndTime)} 播放 {ConfigManager.Instance.ScheduleChannel}";
+            $"已启用：{(s.Days.Count == 0 ? "每天" : string.Join('、', s.Days.OrderBy(d => (int)d == 0 ? 7 : (int)d).Select(d => "周" + "日一二三四五六"[(int)d])))} {FormatTime(s.StartTime)} 至 {FormatTime(s.EndTime)} 播放 {ConfigManager.Instance.ScheduleChannel}";
+    }
+
+    /// <summary>生成 周日~周六 7 个切换按钮（全不选=每天）</summary>
+    private void InitDayButtons(int mask)
+    {
+        if (ScheduleDaysPanel.Children.Count > 0) { SetDayButtons(mask); return; }
+        var names = "日,一,二,三,四,五,六".Split(',');
+        for (int i = 0; i < 7; i++)
+        {
+            var b = new Avalonia.Controls.Primitives.ToggleButton
+            {
+                Content = "周" + names[i],
+                FontSize = 12,
+                Padding = new Avalonia.Thickness(8, 3),
+                Margin = new Avalonia.Thickness(0, 0, 6, 0),
+                Tag = i,
+            };
+            ScheduleDaysPanel.Children.Add(b);
+        }
+        SetDayButtons(mask);
+    }
+
+    private void SetDayButtons(int mask)
+    {
+        foreach (var c in ScheduleDaysPanel.Children)
+            if (c is Avalonia.Controls.Primitives.ToggleButton t && t.Tag is int i)
+                t.IsChecked = mask != 0 && (mask & (1 << i)) != 0;
+    }
+
+    /// <summary>全不选 = 0 = 每天</summary>
+    private int GetDaysMask()
+    {
+        int m = 0;
+        foreach (var c in ScheduleDaysPanel.Children)
+            if (c is Avalonia.Controls.Primitives.ToggleButton { IsChecked: true } t && t.Tag is int i)
+                m |= 1 << i;
+        return m;
     }
 
     private static string FormatTime(TimeSpan t)

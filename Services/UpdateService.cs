@@ -106,6 +106,16 @@ public sealed class UpdateService
         {
             var hasUpdate = await _updater.CheckForUpdatesAsync();
 
+            // ★ 版本守卫：不信库内部比较，自行比较一次（杜绝"已是最新还更新"）
+            if (hasUpdate &&
+                Version.TryParse((LatestVersion ?? "").TrimStart('v', 'V'), out var latest) &&
+                Version.TryParse(CurrentVersion, out var cur) &&
+                latest <= cur)
+            {
+                LogService.Log($"忽略非更新版本: {LatestVersion} <= {CurrentVersion}", "更新");
+                return false;
+            }
+
             if (hasUpdate)
                 LogService.Log($"发现新版本: {LatestVersion}", "更新");
             else
@@ -169,7 +179,11 @@ public sealed class UpdateService
                     Environment.Exit(0);
                     return true;
                 }
-                LogService.Log("Release 无安装包资产，回退 ZIP 更新", "更新");
+                // ★ Windows 不再回退 ZIP 更新：解压 dll 到 AppData 正是误报根源
+                LastError = "Release 缺少 Windows 安装包（Vael_Setup），请到发布页手动下载";
+                LogService.Log(LastError, "更新");
+                DownloadCompleted?.Invoke(false);
+                return false;
             }
 
             // ★ 按平台挑选对应资产（不能再取第一个 zip，否则会拿到别的平台包）

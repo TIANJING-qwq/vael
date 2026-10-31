@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Timers;
 
 namespace SBtools.Services;
@@ -49,6 +50,9 @@ public class PlaybackScheduler : IDisposable
 
     public bool IsPlaying { get; private set; }
 
+    /// <summary>生效的星期（空 = 每天）。跨午夜时段按开始日判断。</summary>
+    public HashSet<DayOfWeek> Days { get; set; } = new();
+
     public PlaybackScheduler(Action onStart, Action onStop)
     {
         _onStart = onStart;
@@ -71,6 +75,15 @@ public class PlaybackScheduler : IDisposable
             {
                 // ★ 计算今天（或跨午夜时昨天/明天）的开始 / 结束边界
                 var (startBoundary, endBoundary) = CalcBoundaries(now);
+
+                // ★ 周几过滤：非生效日不触发（按开始边界所在日算，兼容跨午夜）
+                if (Days.Count > 0 && !Days.Contains(startBoundary.DayOfWeek))
+                {
+                    // 防止边界时间戳停留在旧值，跨日回来后仍能触发
+                    _lastStartBoundary = DateTime.MinValue;
+                    _lastStopBoundary = DateTime.MinValue;
+                    return;
+                }
 
                 // ============ 触发开始 ============
                 // 条件：上次触发的开始边界 < 本次边界，且当前时间 >= 本次边界，且当前时间 < 结束边界

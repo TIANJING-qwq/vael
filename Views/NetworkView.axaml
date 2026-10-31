@@ -119,6 +119,10 @@
                                       x:Name="ScheduleEnabledSwitch"/>
                     </Grid>
 
+                    <Grid ColumnDefinitions="*">
+                        <WrapPanel x:Name="ScheduleDaysPanel" Margin="0,4,0,4"/>
+                    </Grid>
+
                     <Grid ColumnDefinitions="*,140">
                         <TextBlock Grid.Column="0"
                                    Text="开始时间"

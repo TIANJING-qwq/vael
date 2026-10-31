@@ -192,9 +192,16 @@ public partial class MainWindow : Window
         _scheduler.Enabled = ScheduleConfig.Enabled;
         _scheduler.StartTime = ScheduleConfig.StartTime;
         _scheduler.EndTime = ScheduleConfig.EndTime;
+        _scheduler.Days = ScheduleConfig.Days;
+        string daysText = ScheduleConfig.Days.Count == 0
+            ? "每天"
+            : string.Join(",", ScheduleConfig.Days
+                .OrderBy(d => (int)d == 0 ? 7 : (int)d)
+                .Select(d => "周" + "日一二三四五六"[(int)d]));
         LogService.Log(
             $"调度配置同步: 启用={ScheduleConfig.Enabled}, " +
             $"时段={ScheduleConfig.StartTime:hh\\:mm}-{ScheduleConfig.EndTime:hh\\:mm}, " +
+            $"星期={daysText}, " +
             $"频道={ScheduleConfig.ChannelName}",
             "调度");
     }

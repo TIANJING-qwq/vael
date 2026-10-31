@@ -67,6 +67,7 @@ public class ConfigManager
             Services.ScheduleConfig.StartTime = TimeSpan.FromMinutes(_data.ScheduleStartMinutes);
             Services.ScheduleConfig.EndTime = TimeSpan.FromMinutes(_data.ScheduleEndMinutes);
             Services.ScheduleConfig.ChannelName = _data.ScheduleChannel;
+            Services.ScheduleConfig.Days = MaskToDays(_data.ScheduleDays);
         }
         catch { }
     }
@@ -101,6 +102,30 @@ public class ConfigManager
     {
         get => TimeSpan.FromMinutes(_data.ScheduleEndMinutes);
         set { _data.ScheduleEndMinutes = (int)value.TotalMinutes; Services.ScheduleConfig.EndTime = value; Save(); }
+    }
+
+    /// <summary>定时播放生效星期位掩码（0=每天重复）</summary>
+    public int ScheduleDays
+    {
+        get => _data.ScheduleDays;
+        set { _data.ScheduleDays = value; Services.ScheduleConfig.Days = MaskToDays(value); Save(); }
+    }
+
+    internal static System.Collections.Generic.HashSet<System.DayOfWeek> MaskToDays(int mask)
+    {
+        var set = new System.Collections.Generic.HashSet<System.DayOfWeek>();
+        if (mask != 0)
+            for (int i = 0; i < 7; i++)
+                if ((mask & (1 << i)) != 0)
+                    set.Add((System.DayOfWeek)i);
+        return set;
+    }
+
+    internal static int DaysToMask(System.Collections.Generic.HashSet<System.DayOfWeek> days)
+    {
+        int m = 0;
+        foreach (var d in days) m |= 1 << (int)d;
+        return m;
     }
     public string ScheduleChannel
     {
@@ -421,6 +446,7 @@ public class ConfigManager
         public bool ScheduleEnabled { get; set; } = false;
         public int ScheduleStartMinutes { get; set; } = 19 * 60;
         public int ScheduleEndMinutes { get; set; } = 19 * 60 + 30;
+        public int ScheduleDays { get; set; } = 0; // 位掩码 bit0=周日..bit6=周六；0=每天
         public string ScheduleChannel { get; set; } = "CCTV-13 新闻";
 
         // ★ 播放器：上次频道 / 每个频道首选源
