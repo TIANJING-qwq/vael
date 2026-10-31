@@ -74,12 +74,17 @@ public partial class OptimizationCatalogView : UserControl
 
     private void UpdateCardStyles()
     {
+        // 按当前主题取中性底色（浅色下用半透明黑，深色下用半透明白），两种模式都可见
+        bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
         foreach (var card in _catCards)
         {
             bool selected = (card.Tag as string) == _selectedCat;
             card.Background = selected
                 ? Avalonia.Media.Brush.Parse("#0078D4")
-                : Avalonia.Media.Brush.Parse("#22FFFFFF");
+                : Avalonia.Media.Brush.Parse(dark ? "#22FFFFFF" : "#14000000");
+            card.BorderBrush = selected
+                ? Avalonia.Media.Brush.Parse("#0078D4")
+                : Avalonia.Media.Brush.Parse(dark ? "#33FFFFFF" : "#29000000");
         }
     }
 
