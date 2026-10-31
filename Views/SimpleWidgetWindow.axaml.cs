@@ -196,6 +196,10 @@ public partial class SimpleWidgetWindow : Window
     private void ApplyMaterial()
     {
         var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口整体系统模糊
+        // ★ 只请求 AcrylicBlur 才会走系统模糊；列表里带 Transparent 会被优先协商成纯透明
+        TransparencyLevelHint = blur
+            ? new[] { WindowTransparencyLevel.AcrylicBlur }
+            : new[] { WindowTransparencyLevel.Transparent };
         Background = blur
             ? new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.TintHex))
             : Brushes.Transparent;

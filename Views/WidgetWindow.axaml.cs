@@ -17,8 +17,24 @@ public partial class WidgetWindow : Window
     /// <summary>当前实例（主窗口开关用）</summary>
     public static WidgetWindow? Instance;
 
-    /// <summary>应用材质（由 SimpleWidgetWindow.MaterialHex 广播）</summary>
-    public void ApplyMaterial(string hex) => Card.Background = Avalonia.Media.Brush.Parse(hex);
+    /// <summary>应用材质（由 SimpleWidgetWindow.Material 广播）+ 字色反色</summary>
+    public void ApplyMaterial(string hex)
+    {
+        Card.Background = Avalonia.Media.Brush.Parse(hex);
+        // 亮度判断：浅材质黑字，深材质白字（与小组件一致）
+        var r = Convert.ToInt32(hex.Substring(1, 2), 16);
+        var g = Convert.ToInt32(hex.Substring(3, 2), 16);
+        var b = Convert.ToInt32(hex.Substring(5, 2), 16);
+        var fg = r + g + b < 330 ? Avalonia.Media.Brushes.White : Avalonia.Media.Brushes.Black;
+        SetFg(this);
+        void SetFg(object? o)
+        {
+            if (o is Avalonia.Controls.TextBlock tb) tb.Foreground = fg;
+            if (o is Avalonia.Controls.Button btn && (btn.Content is string || btn.Content is Avalonia.Controls.TextBlock)) btn.Foreground = fg;
+            if (o is Avalonia.LogicalTree.ILogical l)
+                foreach (var c in l.LogicalChildren) SetFg(c);
+        }
+    }
     private PerformanceCounter? _cpu;
     private PerformanceCounter? _net;
     private readonly Stopwatch _sw = Stopwatch.StartNew();
