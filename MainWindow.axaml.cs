@@ -682,6 +682,14 @@ public partial class MainWindow : Window
         PopupAnimator.HookAll(_instance.ContentFrame.Content as Visual);
     }
 
+    /// <summary>功能页卡片入口：进入小组件页</summary>
+    public static void ShowWidgetPage()
+    {
+        if (_instance == null) return;
+        _instance.ContentFrame.Navigate(typeof(WidgetView));
+        PopupAnimator.HookAll(_instance.ContentFrame.Content as Visual);
+    }
+
     /// <summary>桌面性能小组件开关</summary>
     public static void ToggleWidget()
     {

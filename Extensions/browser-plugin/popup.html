@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bing 关键词演示</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 380px;
+      max-height: 560px;
+      overflow-y: auto;
+      font: 13px/1.5 -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      color: #111;
+      background: #fafafa;
+    }
+
+    .container { padding: 14px; }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: #0067c0;
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 8px;
+      font-size: 10px;
+      font-weight: normal;
+    }
+
+    h4 {
+      margin: 14px 0 6px;
+      font-size: 12px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    label {
+      user-select: none;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    textarea,
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-family: Consolas, Menlo, monospace;
+      font-size: 12px;
+      outline: none;
+      background: #fff;
+      color: #111;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+      line-height: 1.5;
+    }
+
+    textarea:focus,
+    input:focus,
+    select:focus {
+      border-color: #0067c0;
+    }
+
+    button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 8px;
+      border: none;
+      background: #0067c0;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    button:hover { background: #005bbf; }
+    button:active { background: #004a9e; }
+
+    button.secondary {
+      background: #e8e8e8;
+      color: #333;
+    }
+
+    button.secondary:hover { background: #d8d8d8; }
+    button.secondary:active { background: #c8c8c8; }
+
+    .status {
+      min-height: 18px;
+      margin-top: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .status.show { display: block; }
+
+    .status.ok {
+      color: #156b2b;
+      background: #e6f4ea;
+    }
+
+    .status.err {
+      color: #a02525;
+      background: #fdeaea;
+    }
+
+    .status.info {
+      color: #555;
+      background: #eeeeee;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h3>Bing 关键词演示 <span class="badge">v3.3</span></h3>
+
+    <div class="row">
+      <input type="checkbox" id="enabled" />
+      <label for="enabled">启用扩展</label>
+    </div>
+
+    <div class="row">
+      <input type="checkbox" id="notifyEnabled" />
+      <label for="notifyEnabled">启用桌面通知</label>
+    </div>
+
+    <h4>关键词（每行一个）</h4>
+    <textarea id="keywords" rows="6" spellcheck="false"
+              placeholder="每行一个关键词"></textarea>
+
+    <h4>汐月通知</h4>
+    <div class="row">
+      <input type="checkbox" id="xiyueEnabled" />
+      <label for="xiyueEnabled">检测到关键词/关键网址时通知汐月</label>
+    </div>
+    <input type="text" id="xiyueEndpoint"
+           placeholder="http://127.0.0.1:18520/notify"
+           value="http://127.0.0.1:18520/notify" />
+    <div class="hint">汐月需要在运行状态，且本地 IPC 服务已启动</div>
+    <button id="testXiyue" class="secondary">测试汐月连接</button>
+
+    <h4>Webhook（可选）</h4>
+    <div class="row">
+      <input type="checkbox" id="webhookEnabled" />
+      <label for="webhookEnabled">启用 Webhook</label>
+    </div>
+    <input type="text" id="webhookUrl" placeholder="https://example.com/hook" />
+    <select id="webhookFormat" style="margin-top:6px">
+      <option value="json">完整 JSON</option>
+      <option value="text">通用文本</option>
+      <option value="feishu">飞书机器人</option>
+    </select>
+
+    <button id="save">保存设置</button>
+    <button id="testWebhook" class="secondary">测试 Webhook</button>
+    <button id="viewHistory" class="secondary">查看历史</button>
+    <button id="resetDefaults" class="secondary">恢复默认</button>
+
+    <div class="status" id="status"></div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

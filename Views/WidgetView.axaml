@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SBtools.Views.WidgetView">
+    <ScrollViewer>
+        <StackPanel Margin="24,16" Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
+
+            <TextBlock Text="小组件" FontSize="28" FontWeight="Bold" />
+            <TextBlock Text="悬浮窗 · 趣味 · 实用 · 校园 · 样式自定义" Opacity="0.6" FontSize="13" />
+
+            <!-- 材质选择 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="🎨 小组件材质" FontSize="15" FontWeight="SemiBold" />
+                    <WrapPanel x:Name="MaterialPanel"/>
+                    <TextBlock Text="新开的小组件将使用所选材质；拖动移动，右键换图/关闭。" FontSize="12" Opacity="0.55"/>
+                </StackPanel>
+            </Border>
+
+            <WrapPanel x:Name="WidgetGrid"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -28,7 +28,8 @@ public partial class FeaturesView : UserControl
     // ============================================================
     private void GalleryTile_Click(object? sender, RoutedEventArgs e) => MainWindow.ShowGallery();
 
-    private void WidgetTile_Click(object? sender, RoutedEventArgs e) => MainWindow.ToggleWidget();
+    private void WidgetTile_Click(object? sender, RoutedEventArgs e)
+        => MainWindow.ShowWidgetPage();
 
     private void LoadRandomImage()
     {
