@@ -104,7 +104,7 @@ public static class PopupAnimator
                 .FirstOrDefault(cp => ReferenceEquals(cp.Content, item));
             if (presenter == null) return;
 
-            RunEnter(presenter, fromY: 6, ms: 240);
+            RunEnter(presenter, fromY: -6, ms: 240); // 从上往下，与展开方向一致
         }
         catch (Exception ex)
         {

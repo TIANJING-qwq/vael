@@ -31,8 +31,8 @@ public partial class UpdateView : UserControl
         }
     }
 
-    /// <summary>版本代号</summary>
-    public static string VersionCodename => "曦月";
+    /// <summary>版本代号（全球地名 / 小米机型代号体系）</summary>
+    public static string VersionCodename => "Umi";
 
     /// <summary>各版本更新说明（新增版本往这里加一行）</summary>
     public static string ChangelogFor(string _) =>

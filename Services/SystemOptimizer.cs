@@ -488,6 +488,14 @@ public static class SystemOptimizer
         new() { Id = "maint_dism", Category = "存储与维护",
                 Name = "DISM 组件存储修复", Description = "修复系统镜像，解决更新失败（约 10-30 分钟）",
                 Apply = WrapCommand("DISM /Online /Cleanup-Image /RestoreHealth") },
+        new() { Id = "ui_widgetsoff", Category = "界面与体验",
+                Name = "禁用任务栏小组件（策略）", Description = "组策略注册表方式彻底禁用 Windows 11 小组件/新闻资讯（AllowNewsAndInterests）",
+                Apply = WrapRegistrySet(@"HKLM:\SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", 0),
+                Revert = WrapRegistrySet(@"HKLM:\SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", 1) },
+        new() { Id = "ui_taskbarda", Category = "界面与体验",
+                Name = "隐藏任务栏小组件按钮", Description = "移除任务栏左下角小组件/天气入口（TaskbarDa），重启资源管理器后生效",
+                Apply = WrapRegistrySet(@"HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", 0),
+                Revert = WrapRegistrySet(@"HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", 1) },
     };
 
     // ============================================================
