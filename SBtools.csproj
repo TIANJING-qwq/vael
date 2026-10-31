@@ -10,9 +10,9 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.5.3</Version>
-    <AssemblyVersion>0.5.3</AssemblyVersion>
-    <FileVersion>0.5.3</FileVersion>
+    <Version>0.5.4</Version>
+    <AssemblyVersion>0.5.4</AssemblyVersion>
+    <FileVersion>0.5.4</FileVersion>
     <AssemblyTitle>Vael</AssemblyTitle>
     <Product>Vael 系统工具箱</Product>
     <Company>Vael Project</Company>
