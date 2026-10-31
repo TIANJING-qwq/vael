@@ -138,7 +138,7 @@ public partial class WindowsProblemsView : UserControl
             switch (a.Kind)
             {
                 case ProblemActionKind.RestartExplorer:
-                    RunCmd("/c taskkill /f /im explorer.exe & start explorer.exe", visible: false);
+                    RunCmd($"/c {S.TKill} /f /im explorer.exe & start explorer.exe", visible: false);
                     Log("✓ 资源管理器已重启");
                     break;
 
@@ -172,12 +172,12 @@ public partial class WindowsProblemsView : UserControl
                     break;
 
                 case ProblemActionKind.RebuildIconCache:
-                    RunCmd("/c taskkill /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\IconCache.db\" & start explorer.exe", visible: false);
+                    RunCmd($"/c {S.TKill} /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\IconCache.db\" & start explorer.exe", visible: false);
                     Log("✓ 图标缓存已重建（若图标仍异常请注销重登）");
                     break;
 
                 case ProblemActionKind.ThumbnailCache:
-                    RunCmd("/c taskkill /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db\" & start explorer.exe", visible: false);
+                    RunCmd($"/c {S.TKill} /f /im explorer.exe & del /a /q /f \"%LocalAppData%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db\" & start explorer.exe", visible: false);
                     Log("✓ 缩略图缓存已清理");
                     break;
 

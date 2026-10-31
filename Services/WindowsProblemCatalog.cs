@@ -90,7 +90,7 @@ public static class WindowsProblemCatalog
             "按 Win 键或点开始按钮无反应",
             "重启资源管理器；Win11 可再结束 ShellExperienceHost 与 StartMenuExperienceHost（会自动重启）；仍不行运行 sfc /scannow。",
             A("重启资源管理器", ProblemActionKind.RestartExplorer),
-            A("重启开始菜单宿主", ProblemActionKind.RunCommand, "taskkill /f /im ShellExperienceHost.exe & taskkill /f /im StartMenuExperienceHost.exe")),
+            A("重启开始菜单宿主", ProblemActionKind.RunCommand, $"{S.TKill} /f /im ShellExperienceHost.exe & {S.TKill} /f /im StartMenuExperienceHost.exe")),
 
         P(15, "任务栏与开始菜单", "任务栏图标错乱、重叠或残影",
             "图标显示错位、重叠，或有残留的旧图标",

@@ -429,7 +429,7 @@ public sealed class UpdateService
         sb.AppendLine(":wait_loop");
         sb.AppendLine("tasklist /FI \"IMAGENAME eq SBtools.exe\" 2>nul | find /I \"SBtools.exe\" >nul");
         sb.AppendLine("if not errorlevel 1 (");
-        sb.AppendLine("    taskkill /F /IM SBtools.exe >nul 2>&1");
+        sb.AppendLine($"    {S.TKill} /F /IM SBtools.exe >nul 2>&1");
         sb.AppendLine("    timeout /t 1 /nobreak >nul");
         sb.AppendLine("    goto wait_loop");
         sb.AppendLine(")");
