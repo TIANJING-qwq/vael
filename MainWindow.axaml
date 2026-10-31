@@ -81,7 +81,7 @@
 
                 <fluent:NavigationViewItem Content="更新" Tag="update">
                     <fluent:NavigationViewItem.IconSource>
-                        <fluent:SymbolIconSource Symbol="Update" />
+                        <fluent:SymbolIconSource Symbol="Sync" />
                     </fluent:NavigationViewItem.IconSource>
                 </fluent:NavigationViewItem>
 
