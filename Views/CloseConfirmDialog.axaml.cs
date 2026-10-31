@@ -26,6 +26,7 @@ public partial class CloseConfirmDialog : Window
     public CloseConfirmDialog()
     {
         InitializeComponent();
+        this.DismissOnDeactivate(); // 点弹窗外空白处自动取消
 
         // 判断是否需要安全码
         try

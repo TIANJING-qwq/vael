@@ -21,6 +21,7 @@ public partial class UpdateAvailableDialog : Window
     public UpdateAvailableDialog(string version, string changelog, string title, string confirmText)
     {
         InitializeComponent();
+        this.DismissOnDeactivate(); // 点弹窗外空白处自动取消
 
         TitleText.Text = title;
         VersionText.Text = $"最新版本：{version}";
