@@ -35,7 +35,7 @@ public partial class WidgetWindow : Window
             catch { }
         }
 
-        // 卡片底：液态玻璃=多层渐变，其余=纯色
+        // 卡片底：液态玻璃=暗玻璃多层渐变（配白字保证可读），其余=纯色
         Card.Background = m.Mode == "liquid"
             ? new LinearGradientBrush
             {
@@ -43,20 +43,19 @@ public partial class WidgetWindow : Window
                 EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
                 GradientStops =
                 {
-                    new GradientStop(Avalonia.Media.Color.Parse("#90FFFFFF"), 0),
+                    new GradientStop(Avalonia.Media.Color.Parse("#50000000"), 0),
                     new GradientStop(Avalonia.Media.Color.Parse("#40505060"), 0.35),
                     new GradientStop(Avalonia.Media.Color.Parse("#20404050"), 0.6),
-                    new GradientStop(Avalonia.Media.Color.Parse("#70F0F4FF"), 1),
+                    new GradientStop(Avalonia.Media.Color.Parse("#60102030"), 1),
                 },
             }
             : Avalonia.Media.Brush.Parse(m.CardHex);
 
-        // 字色按材质亮度反色（浅材质黑字，深材质白字）
-        var hex = m.CardHex;
-        var r = Convert.ToInt32(hex.Substring(1, 2), 16);
-        var g = Convert.ToInt32(hex.Substring(3, 2), 16);
-        var b = Convert.ToInt32(hex.Substring(5, 2), 16);
-        var fg = r + g + b < 330 ? Brushes.White : Brushes.Black;
+        // 字色：液态玻璃强制白字（暗玻璃底），其余按材质亮度反色
+        var fg = m.Mode == "liquid" ? Brushes.White
+            : Convert.ToInt32(m.CardHex.Substring(1, 2), 16) +
+              Convert.ToInt32(m.CardHex.Substring(3, 2), 16) +
+              Convert.ToInt32(m.CardHex.Substring(5, 2), 16) < 330 ? Brushes.White : Brushes.Black;
         SetFg(this);
         void SetFg(object? o)
         {

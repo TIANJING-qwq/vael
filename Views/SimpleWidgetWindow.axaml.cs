@@ -149,10 +149,12 @@ public partial class SimpleWidgetWindow : Window
                 break;
         }
         panel.Children.Add(_sub);
-        // 液态玻璃：背景抓图层 + 内容层（抓图实时模糊，按卡片圆角裁剪 → 无方形边）
+        // 液态玻璃：背景抓图层 + 可读性纱层 + 内容层
         _backdrop = new Image { Stretch = Stretch.Fill, Opacity = 0 };
+        _scrim = new Border { Opacity = 0 }; // 压暗纱层，保证文字对比度
         var grid = new Grid();
         grid.Children.Add(_backdrop);
+        grid.Children.Add(_scrim);
         grid.Children.Add(panel);
         _card.Child = grid;
         Content = _card;
@@ -246,8 +248,14 @@ public partial class SimpleWidgetWindow : Window
             : Brush.Parse("#33FFFFFF");
         _card.BorderThickness = new Avalonia.Thickness(_mat.Mode == "liquid" ? 1.5 : 1);
 
-        // ★ 字色按材质亮度反色（白底黑字 / 深底白字）
-        SetForegrounds(_card, _mat.ForeBrush);
+        // ★ 字色反色：液态玻璃压暗纱层+白字（背景是实时抓屏，对比度必须靠纱层保证）；
+        //   其余按材质亮度反色（白底黑字 / 深底白字）
+        var fore = _mat.Mode == "liquid" ? Brushes.White : _mat.ForeBrush;
+        if (_scrim != null)
+            _scrim.Background = _mat.Mode == "liquid"
+                ? new SolidColorBrush(Avalonia.Media.Color.Parse("#66000000"))
+                : Brushes.Transparent;
+        SetForegrounds(_card, fore);
 
         // DWM 圆角（Win11：消除系统模糊层的方形感）
         if (blur && OperatingSystem.IsWindows())
@@ -268,6 +276,7 @@ public partial class SimpleWidgetWindow : Window
     private static void SetForegrounds(object? o, IBrush brush)
     {
         if (o is TextBlock tb) tb.Foreground = brush;
+        if (o is TextBox tbox) tbox.Foreground = brush; // 计算器输入框
         if (o is Button btn && (btn.Content is string || btn.Content is TextBlock)) btn.Foreground = brush;
         if (o is Avalonia.LogicalTree.ILogical l)
             foreach (var c in l.LogicalChildren) SetForegrounds(c, brush);
@@ -317,11 +326,13 @@ public partial class SimpleWidgetWindow : Window
 
     // ===== 液态玻璃：实时抓取窗口背后屏幕 → 模糊 → 贴回（无方框、真演算） =====
     private Image? _backdrop;
+    private Border? _scrim;
     private System.Timers.Timer? _liquidTimer;
 
     private void StartLiquid()
     {
         if (_backdrop != null) _backdrop.Opacity = 1;
+        if (_scrim != null) _scrim.Opacity = 1;
         if (_liquidTimer != null) return;
         _liquidTimer = new System.Timers.Timer(150) { AutoReset = true };
         _liquidTimer.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBackdrop);
@@ -333,6 +344,7 @@ public partial class SimpleWidgetWindow : Window
     {
         _liquidTimer?.Stop(); _liquidTimer = null;
         if (_backdrop != null) _backdrop.Opacity = 0;
+        if (_scrim != null) _scrim.Opacity = 0;
     }
 
     private void UpdateBackdrop()
