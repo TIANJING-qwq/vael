@@ -66,7 +66,7 @@ public partial class SimpleWidgetWindow : Window
         CornerRadius = new Avalonia.CornerRadius(12),
         BorderBrush = Brush.Parse("#33FFFFFF"),
         BorderThickness = new Avalonia.Thickness(1),
-        Margin = new Avalonia.Thickness(6),
+        Margin = new Avalonia.Thickness(0),
         ClipToBounds = true,
         Padding = new Avalonia.Thickness(14),
     };
@@ -149,7 +149,12 @@ public partial class SimpleWidgetWindow : Window
                 break;
         }
         panel.Children.Add(_sub);
-        _card.Child = panel;
+        // 液态玻璃：背景抓图层 + 内容层（抓图实时模糊，按卡片圆角裁剪 → 无方形边）
+        _backdrop = new Image { Stretch = Stretch.Fill, Opacity = 0 };
+        var grid = new Grid();
+        grid.Children.Add(_backdrop);
+        grid.Children.Add(panel);
+        _card.Child = grid;
         Content = _card;
         ApplyMaterial();
 
@@ -162,7 +167,7 @@ public partial class SimpleWidgetWindow : Window
         };
 
         _all.Add(this);
-        Closed += (_, _) => _all.Remove(this);
+        Closed += (_, _) => { _all.Remove(this); StopLiquid(); };
         Position = new Avalonia.PixelPoint(
             (int)(Screens.Primary?.WorkingArea.Width - (int)Width - 20 ?? 1200),
             90 + _rnd.Next(200));
@@ -198,8 +203,17 @@ public partial class SimpleWidgetWindow : Window
         var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口级系统模糊
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
         Background = Brushes.Transparent;
-        // ★ 直接 Win32 合成属性 API（Avalonia 的 AcrylicBlur hint 在新系统失效）
-        EnableBlurBehind(this, blur ? _mat.TintHex : null);
+        if (_mat.Mode == "liquid")
+        {
+            // ★ 液态玻璃：关闭系统模糊（消灭方形边），改用实时抓屏演算
+            EnableBlurBehind(this, null);
+            StartLiquid();
+        }
+        else
+        {
+            EnableBlurBehind(this, blur ? _mat.TintHex : null);
+            StopLiquid();
+        }
         _card.Background = _mat.Mode == "liquid"
             // 液态玻璃：多层对角渐变（左上高光 → 中段镜面 → 右下亮边），即使系统模糊不可用也有玻璃质感
             ? new LinearGradientBrush
@@ -300,6 +314,114 @@ public partial class SimpleWidgetWindow : Window
         }
         catch { }
     }
+
+    // ===== 液态玻璃：实时抓取窗口背后屏幕 → 模糊 → 贴回（无方框、真演算） =====
+    private Image? _backdrop;
+    private System.Timers.Timer? _liquidTimer;
+
+    private void StartLiquid()
+    {
+        if (_backdrop != null) _backdrop.Opacity = 1;
+        if (_liquidTimer != null) return;
+        _liquidTimer = new System.Timers.Timer(150) { AutoReset = true };
+        _liquidTimer.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBackdrop);
+        _liquidTimer.Start();
+        UpdateBackdrop();
+    }
+
+    private void StopLiquid()
+    {
+        _liquidTimer?.Stop(); _liquidTimer = null;
+        if (_backdrop != null) _backdrop.Opacity = 0;
+    }
+
+    private void UpdateBackdrop()
+    {
+        try
+        {
+            if (!IsVisible || _backdrop == null) return;
+            var tl = Position; // 窗口左上角（设备像素）
+            var scale = Screens.Primary?.Scaling ?? 1;
+            int w = Math.Max(1, (int)(Width * scale)), h = Math.Max(1, (int)(Height * scale));
+            if (w > 2000 || h > 2000) return;
+            var buf = CaptureScreen(tl.X, tl.Y, w, h);
+            if (buf == null) return;
+            BoxBlur(buf, w, h, 6); // 双向盒式模糊
+            var wb = new Avalonia.Media.Imaging.WriteableBitmap(
+                new Avalonia.PixelSize(w, h), new Avalonia.Vector(96, 96), Avalonia.Platform.PixelFormat.Bgra8888);
+            using (var l = wb.Lock())
+                System.Runtime.InteropServices.Marshal.Copy(buf, 0, l.Address, buf.Length);
+            _backdrop.Source = wb;
+        }
+        catch { }
+    }
+
+    /// <summary>GDI 抓屏（指定设备像素区域），返回 BGRA 缓冲</summary>
+    private static byte[]? CaptureScreen(int x, int y, int w, int h)
+    {
+        var scr = GetDC(IntPtr.Zero);
+        var mem = CreateCompatibleDC(scr);
+        var bmi = new BITMAPINFO { biSize = 40, biWidth = w, biHeight = -h, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+        IntPtr ptr = IntPtr.Zero;
+        var hbm = CreateDIBSection(scr, ref bmi, 0, out ptr, IntPtr.Zero, 0);
+        if (hbm == IntPtr.Zero || ptr == IntPtr.Zero) { DeleteDC(mem); ReleaseDC(IntPtr.Zero, scr); return null; }
+        var old = SelectObject(mem, hbm);
+        BitBlt(mem, 0, 0, w, h, scr, x, y, 0x00CC0020 /*SRCCOPY*/);
+        var buf = new byte[w * h * 4];
+        Marshal.Copy(ptr, buf, 0, buf.Length);
+        SelectObject(mem, old);
+        DeleteObject(hbm); DeleteDC(mem); ReleaseDC(IntPtr.Zero, scr);
+        return buf;
+    }
+
+    /// <summary>水平+垂直盒式模糊（原地，含提亮高光感）</summary>
+    private static void BoxBlur(byte[] b, int w, int h, int r)
+    {
+        var tmp = new byte[b.Length];
+        int div = r * 2 + 1;
+        // 水平
+        for (int y = 0; y < h; y++)
+        {
+            int row = y * w * 4;
+            for (int c = 0; c < 3; c++)
+            {
+                int sum = 0;
+                for (int i = -r; i <= r; i++) sum += b[row + Math.Clamp(i, 0, w - 1) * 4 + c];
+                for (int x = 0; x < w; x++)
+                {
+                    tmp[row + x * 4 + c] = (byte)(sum / div);
+                    sum += b[row + Math.Clamp(x + r + 1, 0, w - 1) * 4 + c]
+                         - b[row + Math.Clamp(x - r, 0, w - 1) * 4 + c];
+                }
+            }
+        }
+        // 垂直
+        for (int x = 0; x < w; x++)
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                int sum = 0;
+                for (int i = -r; i <= r; i++) sum += tmp[Math.Clamp(i, 0, h - 1) * w * 4 + x * 4 + c];
+                for (int y = 0; y < h; y++)
+                {
+                    b[y * w * 4 + x * 4 + c] = (byte)(sum / div);
+                    sum += tmp[Math.Clamp(y + r + 1, 0, h - 1) * w * 4 + x * 4 + c]
+                         - tmp[Math.Clamp(y - r, 0, h - 1) * w * 4 + x * 4 + c];
+                }
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BITMAPINFO { public int biSize, biWidth, biHeight, biPlanes, biBitCount, biCompression; }
+    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr h);
+    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr h, IntPtr dc);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
+    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BITMAPINFO bmi, uint usage, out IntPtr bits, IntPtr file, uint offset);
+    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
+    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
+    [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr dst, int dx, int dy, int w, int h, IntPtr src, int sx, int sy, uint rop);
 
     private void TryLoadImages()
     {
