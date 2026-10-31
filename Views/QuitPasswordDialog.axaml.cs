@@ -41,7 +41,7 @@ public partial class QuitPasswordDialog : Window
     {
         _errorMessage = string.IsNullOrEmpty(errorMessage) ? "安全码错误" : errorMessage;
         InitializeComponent();
-        this.DismissOnDeactivate(); // 点弹窗外空白处自动取消
+        this.DismissOnDeactivate(false); // 点弹窗外空白处自动取消
         _logTag = string.IsNullOrEmpty(logTag) ? "安全码" : logTag;
 
         InitializeComponent();
