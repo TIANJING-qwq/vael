@@ -2,39 +2,66 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="SBtools.Views.UpdateView">
     <ScrollViewer>
-        <StackPanel Margin="24,16" Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
+        <StackPanel Margin="24,16" Spacing="14" MaxWidth="740" HorizontalAlignment="Left">
 
-            <TextBlock Text="更新" FontSize="28" FontWeight="Bold" />
+            <!-- 头部：大标题 + 版本徽章 -->
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <TextBlock Text="更新" FontSize="30" FontWeight="Bold" VerticalAlignment="Center" />
+                <Border Background="#0078D4" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                    <TextBlock Text="稳定版" FontSize="12" Foreground="White" FontWeight="SemiBold" />
+                </Border>
+            </StackPanel>
 
-            <!-- 版本信息卡 -->
-            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock FontSize="16" FontWeight="SemiBold">
-                        <Run Text="Vael v" /><Run x:Name="VerRun" Text="0.0.0" />
-                    </TextBlock>
-                    <TextBlock Opacity="0.7" FontSize="13">
-                        <Run Text="代号 " /><Run x:Name="CodenameRun" Text="-" FontWeight="SemiBold" />
-                    </TextBlock>
-                </StackPanel>
-            </Border>
+            <TextBlock FontSize="14" Opacity="0.85">
+                <Run Text="当前版本 " /><Run x:Name="VerRun" Text="0.0.0" FontWeight="SemiBold" />
+                <Run Text="  ·  代号 " /><Run x:Name="CodenameRun" Text="-" FontWeight="SemiBold" />
+            </TextBlock>
 
-            <!-- 操作区 -->
+            <!-- 操作区（ClassIsland 式：主按钮实心 + 次按钮描边） -->
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button x:Name="CheckUpdateButton" Content="检查更新"
-                        Click="CheckUpdateButton_Click" MinWidth="120" />
+                        Click="CheckUpdateButton_Click" MinWidth="130" Padding="18,10"
+                        Background="#0078D4" Foreground="White" BorderThickness="0"
+                        CornerRadius="8" FontSize="14" FontWeight="SemiBold" />
                 <Button x:Name="ForceUpdateButton" Content="强制测试更新"
-                        Click="ForceUpdateButton_Click" MinWidth="140"
-                        ToolTip.Tip="忽略版本比较，强制走一次完整更新流程（测试用）" />
+                        Click="ForceUpdateButton_Click" MinWidth="130" Padding="18,10"
+                        BorderBrush="#0078D4" Foreground="#0078D4" BorderThickness="1"
+                        CornerRadius="8" FontSize="14" />
             </StackPanel>
-            <TextBlock x:Name="StatusText" Opacity="0.7" FontSize="13" Text="就绪" TextWrapping="Wrap" />
+            <TextBlock x:Name="StatusText" Opacity="0.65" FontSize="13" Text="就绪" TextWrapping="Wrap" />
 
-            <!-- 此版本更新内容 -->
-            <TextBlock Text="此版本更新" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" />
+            <!-- 版本日志：时间线卡片 -->
+            <TextBlock Text="版本日志" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" />
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8" Padding="16">
-                <TextBlock x:Name="ChangelogText" TextWrapping="Wrap" FontSize="13" LineHeight="22"
-                           Text="- 加载中…" />
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="20,14">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.4" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; 小组件管理页：16 项自实现桌面小组件&#10;&#8226; 点击开启 / 再次点击关闭 / 右键详细配置&#10;&#8226; 8 种材质实时切换；计算器 / 电池 / 内存曲线全自写&#10;&#8226; 常见问题 115 条 · 优化大全 114 项"
+                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.2" FontSize="15" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; Windows 更新改用安装包静默升级&#10;&#8226; CI 产出安装包；程序集元数据补全"
+                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.1" FontSize="15" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; 关于页隐藏彩蛋&#10;&#8226; 下拉框非线性动画"
+                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
             </Border>
 
         </StackPanel>

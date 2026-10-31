@@ -22,8 +22,6 @@ public partial class UpdateView : UserControl
             var ver = Assembly.GetExecutingAssembly().GetName().Version;
             VerRun.Text = $"{ver?.Major ?? 0}.{ver?.Minor ?? 0}.{ver?.Build ?? 0}";
             CodenameRun.Text = VersionCodename;
-
-            ChangelogText.Text = ChangelogFor("");
         }
         catch (Exception ex)
         {

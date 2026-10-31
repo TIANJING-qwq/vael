@@ -102,11 +102,15 @@ public partial class WidgetWindow : Window
             if (_net != null && _sw.Elapsed.TotalSeconds > 2)
             {
                 var b = (long)_net.NextValue();
-                var d = b - _lastBytes;
+                var d = Math.Max(0, b - _lastBytes);
                 _lastBytes = b;
-                NetText.Text = d >= 0
-                    ? $"网速 {(d / 1024.0 / 2):F1} KB/s"
-                    : "网速 --";
+                // 自动换单位
+                NetText.Text = d switch
+                {
+                    >= 1024 * 1024 => $"网速 {d / 1024.0 / 1024:0.##} MB/s",
+                    >= 1024 => $"网速 {d / 1024.0:0.#} KB/s",
+                    _ => $"网速 {d} B/s",
+                };
             }
         }
         catch { }

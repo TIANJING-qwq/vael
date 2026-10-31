@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Transformation;
+using Avalonia.Animation;
 
 namespace SBtools.Views;
 
 /// <summary>
-/// 通用桌面小组件窗：时钟/倒计时/涩图/骰子/硬币/点名/一言/电池/计算器。
-/// 点击切换内容动作，右键打开该组件的详细配置；材质全局实时生效。
+/// 通用桌面小组件窗。左键=动作，拖动空白=移动，右键=详细配置；
+/// 出现时非线性入场动画；材质全局实时生效。
 /// </summary>
 public partial class SimpleWidgetWindow : Window
 {
@@ -19,13 +22,10 @@ public partial class SimpleWidgetWindow : Window
     public sealed class Config
     {
         public DateTime Target = DateTime.Now.AddDays(30);
-        public int Range = 45;          // 点名总人数
-        public int DiceFaces = 6;       // 骰子面数
-        public int PomoMinutes = 25;    // 番茄钟时长
+        public int Range = 45, DiceFaces = 6, PomoMinutes = 25;
         public string Title = "";
     }
 
-    // ===== 全局材质（实时广播到所有实例） =====
     private static string _materialHex = "#D0202020";
     public static string MaterialHex
     {
@@ -50,20 +50,21 @@ public partial class SimpleWidgetWindow : Window
         ClipToBounds = true,
         Padding = new Avalonia.Thickness(14),
     };
-    private readonly TextBlock _big = new() { FontSize = 26, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _big = new() { FontSize = 24, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _sub = new() { FontSize = 11, Opacity = 0.65, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     private readonly Image? _img;
+    private readonly Polyline? _graph;
+    private readonly List<double> _history = new();
     private string[]? _imgs;
     private readonly Random _rnd = new();
     private System.Timers.Timer? _pomo;
     private DateTime _pomoEnd;
-    private readonly TextBox? _calcInput;
-    private readonly TextBlock? _calcOut;
+    // 计算器
+    private TextBox? _calcInput;
 
     [StructLayout(LayoutKind.Sequential)]
     private class SYSTEM_POWER_STATUS { public byte ACLineStatus, BatteryFlag, BatteryLifePercent; public byte Reserved1; public int BatteryLifeTime, BatteryFullLifeTime; }
     [DllImport("user32.dll")] private static extern bool GetSystemPowerStatus([MarshalAs(UnmanagedType.LPStruct)] SYSTEM_POWER_STATUS lp);
-
     [StructLayout(LayoutKind.Sequential)]
     private struct MEMORYSTATUSEX
     {
@@ -78,7 +79,7 @@ public partial class SimpleWidgetWindow : Window
         _kind = kind; _cfg = cfg;
         Title = cfg.Title;
         Width = kind is Kind.Gallery ? 300 : 230;
-        Height = kind is Kind.Gallery or Kind.Calc ? 240 : 150;
+        Height = kind is Kind.Gallery or Kind.Calc ? 260 : kind is Kind.Battery && cfg.Title == "内存占用" ? 190 : 150;
         SystemDecorations = SystemDecorations.None;
         ShowInTaskbar = false;
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
@@ -86,37 +87,45 @@ public partial class SimpleWidgetWindow : Window
         Topmost = true;
 
         var panel = new StackPanel { Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+
+        // 标题栏（拖动移动 + 关闭）
         var head = new Grid();
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        head.Children.Add(new TextBlock { Text = cfg.Title, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center });
+        var titleTb = new TextBlock { Text = cfg.Title, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(titleTb, 0);
+        head.Children.Add(titleTb);
         var close = new Button { Content = "✕", FontSize = 10, Padding = new Avalonia.Thickness(5, 1), Opacity = 0.5 };
         Grid.SetColumn(close, 1);
         close.Click += (_, _) => Close();
         head.Children.Add(close);
+        head.PointerPressed += (_, e) => { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e); };
         panel.Children.Add(head);
 
         switch (kind)
         {
             case Kind.Gallery:
                 _img = new Image { Stretch = Stretch.Uniform, MaxHeight = 165 };
+                _img.PointerPressed += (_, e) => { if (e.GetCurrentPoint(_img).Properties.IsLeftButtonPressed) { Shuffle(); e.Handled = true; } };
                 panel.Children.Add(_img);
-                TryLoadImages(); Shuffle();
+                TryLoadImages();
                 break;
             case Kind.Calc:
-                _calcInput = new TextBox { Watermark = "如 12*(3+4)/2" };
-                _calcOut = new TextBlock { FontSize = 20, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center };
-                var calcBtn = new Button { Content = "＝ 计算", HorizontalAlignment = HorizontalAlignment.Center };
-                calcBtn.Click += (_, _) => CalcEval();
-                _calcInput.KeyDown += (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) CalcEval(); };
-                panel.Children.Add(_calcInput); panel.Children.Add(calcBtn); panel.Children.Add(_calcOut);
+                BuildCalc(panel);
                 break;
             case Kind.Pomodoro:
-                var startStop = new Button { Content = "开始专注", HorizontalAlignment = HorizontalAlignment.Center };
+                var startStop = new Button { Content = "开始专注", HorizontalAlignment = HorizontalAlignment.Center, CornerRadius = new Avalonia.CornerRadius(8), Padding = new Avalonia.Thickness(16, 6) };
                 startStop.Click += (_, _) => PomoToggle(startStop);
-                panel.Children.Add(_big); panel.Children.Add(startStop);
+                panel.Children.Add(_big);
+                panel.Children.Add(startStop);
+                break;
+            case Kind.Battery when cfg.Title == "内存占用":
+                _graph = new Polyline { Stroke = Brush.Parse("#60CDFF"), StrokeThickness = 1.5, Points = new List<Avalonia.Point>(), Width = 196, Height = 46, HorizontalAlignment = HorizontalAlignment.Center };
+                panel.Children.Add(_big);
+                panel.Children.Add(_graph);
                 break;
             default:
+                _big.PointerPressed += (_, e) => { if (e.GetCurrentPoint(_big).Properties.IsLeftButtonPressed) { Action(); e.Handled = true; } };
                 panel.Children.Add(_big);
                 break;
         }
@@ -125,16 +134,10 @@ public partial class SimpleWidgetWindow : Window
         Content = _card;
         ApplyMaterial();
 
-        // 左键：动作（掷/换图/换一言）；拖动：移动；右键：详细配置
+        // 窗体空白处：左键拖动 / 右键配置
         PointerPressed += (_, e) =>
         {
-            var p = e.GetCurrentPoint(this);
-            if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) OpenConfig();
-            else if (p.Properties.IsLeftButtonPressed)
-            {
-                var onBig = _big.IsPointerOver || (_img?.IsPointerOver ?? false) || (_calcOut?.IsPointerOver ?? false);
-                if (onBig) Action(); else BeginMoveDrag(e);
-            }
+            if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
         };
 
         _all.Add(this);
@@ -147,7 +150,26 @@ public partial class SimpleWidgetWindow : Window
         t.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(Tick);
         t.Start();
         Tick();
-        if (kind != Kind.Countdown && kind != Kind.Quote && kind != Kind.Roll && kind != Kind.Dice && kind != Kind.Coin && kind != Kind.Battery) Action();
+        Action(); // 初始内容
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        // ★ 非线性入场：透明+缩小 → 就位（ExponentialEaseOut，无过冲）
+        _card.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(300), Easing = new Avalonia.Animation.Easings.ExponentialEaseOut() },
+            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(400), Easing = new Avalonia.Animation.Easings.ExponentialEaseOut() },
+        };
+        _card.RenderTransformOrigin = new Avalonia.RelativePoint(0.5, 0.5, Avalonia.RelativeUnit.Relative);
+        Opacity = 0;
+        _card.RenderTransform = TransformOperations.Parse("scale(0.88)");
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            Opacity = 1;
+            _card.RenderTransform = TransformOperations.Parse("scale(1)");
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void ApplyMaterial() => _card.Background = Brush.Parse(_materialHex);
@@ -179,19 +201,18 @@ public partial class SimpleWidgetWindow : Window
                     break;
                 case Kind.Countdown:
                     var left = _cfg.Target - DateTime.Now;
-                    if (left < TimeSpan.Zero) { _big.Text = "🎉"; _sub.Text = "目标已到！"; }
+                    if (left < TimeSpan.Zero) { _big.Text = "已到达"; _sub.Text = "目标时间已过，右键修改"; }
                     else
                     {
                         _big.Text = $"{left.Days}天 {left.Hours:00}:{left.Minutes:00}:{left.Seconds:00}";
-                        _sub.Text = $"目标 {_cfg.Target:yyyy-M-d HH:mm} · 点击无动作";
+                        _sub.Text = $"目标 {_cfg.Target:yyyy-M-d HH:mm}";
                     }
                     break;
                 case Kind.Battery:
                     if (_cfg.Title == "C 盘")
                     {
                         var c = new System.IO.DriveInfo("C");
-                        var free = c.TotalFreeSpace / 1024.0 / 1024 / 1024;
-                        _big.Text = $"💽 {free:F0} GB";
+                        _big.Text = $"{c.TotalFreeSpace / 1024.0 / 1024 / 1024:F0} GB";
                         _sub.Text = $"C 盘剩余 / 共 {c.TotalSize / 1024.0 / 1024 / 1024:F0} GB";
                     }
                     else if (_cfg.Title == "内存占用")
@@ -199,8 +220,18 @@ public partial class SimpleWidgetWindow : Window
                         var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
                         if (GlobalMemoryStatusEx(ref mem))
                         {
-                            _big.Text = $"📈 {mem.dwMemoryLoad}%";
-                            _sub.Text = $"已用 {mem.ullTotalPhys / 1024.0 / 1024 / 1024 * (100 - mem.dwMemoryLoad) / 100:F1} / {mem.ullTotalPhys / 1024.0 / 1024 / 1024:F1} GB";
+                            _big.Text = $"内存 {mem.dwMemoryLoad}%";
+                            _sub.Text = $"已用 {(mem.ullTotalPhys - mem.ullAvailPhys) / 1024.0 / 1024 / 1024:F1} / {mem.ullTotalPhys / 1024.0 / 1024 / 1024:F1} GB";
+                            // 曲线：最近 60 个采样
+                            _history.Add(mem.dwMemoryLoad);
+                            if (_history.Count > 60) _history.RemoveAt(0);
+                            if (_graph != null)
+                            {
+                                var pts = new List<Avalonia.Point>();
+                                for (int i = 0; i < _history.Count; i++)
+                                    pts.Add(new Avalonia.Point(i * 196.0 / 59.0, 46 - _history[i] * 0.44));
+                                _graph.Points = pts;
+                            }
                         }
                     }
                     else
@@ -208,14 +239,14 @@ public partial class SimpleWidgetWindow : Window
                         var s = new SYSTEM_POWER_STATUS();
                         if (GetSystemPowerStatus(s))
                         {
-                            _big.Text = $"🔋 {s.BatteryLifePercent}%";
+                            _big.Text = $"电量 {s.BatteryLifePercent}%";
                             _sub.Text = s.ACLineStatus == 1 ? "充电中（交流电）" : "使用电池";
                         }
                     }
                     break;
                 case Kind.Pomodoro when _pomo != null:
                     var l = _pomoEnd - DateTime.Now;
-                    _big.Text = l > TimeSpan.Zero ? $"{(int)l.TotalMinutes:00}:{l.Seconds:00}" : "✅ 完成！";
+                    _big.Text = l > TimeSpan.Zero ? $"{(int)l.TotalMinutes:00}:{l.Seconds:00}" : "完成";
                     break;
             }
         }
@@ -227,23 +258,25 @@ public partial class SimpleWidgetWindow : Window
         switch (_kind)
         {
             case Kind.Dice:
-                _big.Text = $"🎲 {_rnd.Next(1, _cfg.DiceFaces + 1)}";
+                _big.Text = $"{_rnd.Next(1, _cfg.DiceFaces + 1)} 点";
                 _sub.Text = $"{_cfg.DiceFaces} 面骰 · 点击再掷 · 右键配置";
                 break;
             case Kind.Coin:
-                _big.Text = _rnd.Next(2) == 0 ? "🪙 正面" : "🪙 反面";
+                _big.Text = _rnd.Next(2) == 0 ? "正面" : "反面";
                 _sub.Text = "点击再抛";
                 break;
             case Kind.Roll:
-                _big.Text = $"👦 第 {_rnd.Next(1, _cfg.Range + 1)} 号";
-                _sub.Text = $"全班 {_cfg.Range} 人 · 点击重抽 · 右键配置";
+                _big.Text = $"第 {_rnd.Next(1, _cfg.Range + 1)} 号";
+                _sub.Text = $"范围 1-{_cfg.Range} · 点击重抽 · 右键配置";
                 break;
             case Kind.Quote:
                 var qs = new[] { "行到水穷处，坐看云起时。", "日拱一卒，功不唐捐。", "凡是过往，皆为序章。", "山不让尘，川不辞盈。", "追风赶月莫停留，平芜尽处是春山。", "路虽远，行则将至。", "不积跬步，无以至千里。" };
-                _big.FontSize = 15; _big.Text = qs[_rnd.Next(qs.Length)];
+                _big.FontSize = 15;
+                _big.Text = qs[_rnd.Next(qs.Length)];
                 _sub.Text = "点击换一句";
                 break;
             case Kind.Gallery: Shuffle(); break;
+            case Kind.Calc: break;
         }
     }
 
@@ -258,15 +291,68 @@ public partial class SimpleWidgetWindow : Window
         catch { }
     }
 
-    private void CalcEval()
+    // ================= 计算器（现代化按键式） =================
+    private void BuildCalc(StackPanel panel)
     {
-        try
+        _calcInput = new TextBox { FontSize = 20, TextAlignment = TextAlignment.Right, IsReadOnly = true, Text = "0" };
+        panel.Children.Add(_calcInput);
+
+        var grid = new Grid { Margin = new Avalonia.Thickness(0, 8, 0, 0) };
+        for (int i = 0; i < 4; i++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int i = 0; i < 5; i++) grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(38) });
+
+        string[] keys = { "C", "←", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "0", ".", "（", "）" };
+        var expr = "";
+        for (int i = 0; i < keys.Length; i++)
         {
-            var r = new System.Data.DataTable().Compute(_calcInput!.Text ?? "", null);
-            _calcOut!.Text = r?.ToString() ?? "?";
-            _sub.Text = "支持 + - * / % 括号";
+            var k = keys[i];
+            var b = new Button
+            {
+                Content = k, FontSize = 14,
+                CornerRadius = new Avalonia.CornerRadius(8),
+                Margin = new Avalonia.Thickness(2),
+                Background = "0123456789.".Contains(k) && k.Length == 1
+                    ? Brush.Parse("#22FFFFFF") : Brush.Parse("#33FFFFFF"),
+                Tag = k,
+            };
+            Grid.SetColumn(b, i % 4); Grid.SetRow(b, i / 4);
+            b.Click += (_, _) =>
+            {
+                try
+                {
+                    if (k == "C") expr = "";
+                    else if (k == "←") expr = expr.Length > 0 ? expr[..^1] : "";
+                    else if (k == "=") { }
+                    else expr += k;
+                    if (long.TryParse(expr, out _) || expr == "") _calcInput.Text = expr == "" ? "0" : expr;
+                    else _calcInput.Text = expr;
+                }
+                catch { }
+            };
+            grid.Children.Add(b);
         }
-        catch (Exception ex) { _calcOut!.Text = "表达式错误"; _sub.Text = ex.Message; }
+        // = 大按钮占满最后一行
+        var eq = new Button
+        {
+            Content = "=", FontSize = 16, FontWeight = FontWeight.Bold,
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Margin = new Avalonia.Thickness(2),
+            Background = Brush.Parse("#0078D4"), Foreground = Brushes.White,
+        };
+        Grid.SetColumnSpan(eq, 4); Grid.SetRow(eq, 4);
+        eq.Click += (_, _) =>
+        {
+            try
+            {
+                var e2 = expr.Replace('×', '*').Replace('÷', '/').Replace('−', '-');
+                _calcInput.Text = new System.Data.DataTable().Compute(e2, null)?.ToString() ?? "0";
+                expr = _calcInput.Text;
+            }
+            catch { _calcInput.Text = "错误"; expr = ""; }
+        };
+        grid.Children.Add(eq);
+        panel.Children.Add(grid);
+        _sub.Text = "按键输入 · = 求值";
     }
 
     private void PomoToggle(Button btn)
@@ -278,11 +364,11 @@ public partial class SimpleWidgetWindow : Window
             _pomo.Elapsed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 Tick();
-                if (DateTime.Now >= _pomoEnd) { _pomo?.Stop(); _pomo = null; btn.Content = "开始专注"; }
+                if (DateTime.Now >= _pomoEnd) { _pomo?.Stop(); _pomo = null; btn.Content = "开始专注"; _big.Text = "完成"; }
             });
             _pomo.Start();
             btn.Content = "放弃";
-            _sub.Text = $"专注 {_cfg.PomoMinutes} 分钟 · 右键配置时长";
+            _sub.Text = $"专注 {_cfg.PomoMinutes} 分钟 · 右键配置";
         }
         else { _pomo.Stop(); _pomo = null; btn.Content = "开始专注"; _big.Text = "已停止"; }
     }
@@ -291,25 +377,18 @@ public partial class SimpleWidgetWindow : Window
     private void OpenConfig()
     {
         var panel = new StackPanel { Margin = new Avalonia.Thickness(16), Spacing = 10 };
-        var w = new Window
-        {
-            Title = $"{_cfg.Title} · 配置", Width = 320, Height = 220,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        };
-        TextBox tb1 = new() { Watermark = "参数 1" };
-        TextBox tb2 = new() { Watermark = "参数 2" };
+        var w = new Window { Title = $"{_cfg.Title} · 配置", Width = 320, Height = 230, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var tb1 = new TextBox { Watermark = "参数" };
         var ok = new Button { Content = "保存并刷新", HorizontalAlignment = HorizontalAlignment.Right };
+
         switch (_kind)
         {
             case Kind.Countdown:
-                panel.Children.Add(new TextBlock { Text = "目标时间（格式 2026-06-07 09:00）" });
-                tb1.Text = _cfg.Target.ToString("yyyy-MM-dd HH:mm");
-                panel.Children.Add(tb1);
-                panel.Children.Add(new TextBlock { Text = "提前提醒天数（可留空）", Opacity = 0.6 });
-                panel.Children.Add(tb2);
+                panel.Children.Add(new TextBlock { Text = "目标时间（如 2026-06-07 09:00）" });
+                tb1.Text = _cfg.Target.ToString("yyyy-MM-dd HH:mm"); panel.Children.Add(tb1);
                 break;
             case Kind.Roll:
-                panel.Children.Add(new TextBlock { Text = "总人数" });
+                panel.Children.Add(new TextBlock { Text = _cfg.Title == "随机题号" ? "题号上限" : "总人数" });
                 tb1.Text = _cfg.Range.ToString(); panel.Children.Add(tb1);
                 break;
             case Kind.Dice:
@@ -324,11 +403,8 @@ public partial class SimpleWidgetWindow : Window
                 TryLoadImages(); Shuffle();
                 panel.Children.Add(new TextBlock { Text = $"已重新加载 {_imgs?.Length ?? 0} 张图" });
                 break;
-            case Kind.Calc:
-                panel.Children.Add(new TextBlock { Text = "支持 + - * / % 与括号，回车即算。无额外配置。" });
-                break;
             default:
-                panel.Children.Add(new TextBlock { Text = "该组件无配置项。\n左键=动作，标题栏✕=关闭，拖动=移动。" });
+                panel.Children.Add(new TextBlock { Text = "该组件无配置项。\n左键=动作 · 标题栏拖动=移动 · 右键=本配置窗。" });
                 break;
         }
         panel.Children.Add(ok);
@@ -338,18 +414,10 @@ public partial class SimpleWidgetWindow : Window
             {
                 switch (_kind)
                 {
-                    case Kind.Countdown:
-                        if (DateTime.TryParse(tb1.Text, out var dt)) _cfg.Target = dt;
-                        break;
-                    case Kind.Roll:
-                        if (int.TryParse(tb1.Text, out var n) && n > 0) _cfg.Range = n;
-                        break;
-                    case Kind.Dice:
-                        if (int.TryParse(tb1.Text, out var f) && f > 1) _cfg.DiceFaces = f;
-                        break;
-                    case Kind.Pomodoro:
-                        if (int.TryParse(tb1.Text, out var m) && m > 0) _cfg.PomoMinutes = m;
-                        break;
+                    case Kind.Countdown: if (DateTime.TryParse(tb1.Text, out var dt)) _cfg.Target = dt; break;
+                    case Kind.Roll: if (int.TryParse(tb1.Text, out var n) && n > 0) _cfg.Range = n; break;
+                    case Kind.Dice: if (int.TryParse(tb1.Text, out var f) && f > 1) _cfg.DiceFaces = f; break;
+                    case Kind.Pomodoro: if (int.TryParse(tb1.Text, out var m) && m > 0) _cfg.PomoMinutes = m; break;
                 }
                 Action(); Tick();
             }

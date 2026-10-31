@@ -18,25 +18,25 @@ public partial class WidgetView : UserControl
         ("#D0142A4C", "深空蓝"), ("#C0FFFFFF", "毛玻璃"),
     };
 
-    // (图标, 名称, 说明, Key)：全部自实现功能，无系统程序跳转
+    // (单字, 名称, 说明, Key)：全部自实现功能，无系统程序跳转
     private static readonly (string, string, string, string)[] _widgets =
     {
-        ("📊", "性能监控", "CPU/内存/网速", "perf"),
-        ("🕐", "数字时钟", "大字时钟+星期", "clock"),
-        ("⏳", "高考倒计时", "距次年6月7日·右键改时间", "gaokao"),
-        ("📅", "自定义倒计时", "右键设目标时间", "countdown"),
-        ("🖼", "随机涩图", "点击换图", "gallery"),
-        ("🎲", "骰子", "右键改面数", "dice"),
-        ("🪙", "硬币", "点击再抛", "coin"),
-        ("💬", "一言卡片", "点击换句", "quote"),
-        ("🔢", "随机点名", "右键改人数", "roll"),
-        ("📝", "随机题号", "右键改范围", "question"),
-        ("🍅", "番茄钟", "右键改时长", "pomodoro"),
-        ("🧮", "迷你计算器", "表达式求值", "calc"),
-        ("🔋", "电池悬浮窗", "电量+充电状态", "battery"),
-        ("💽", "磁盘余量", "C盘实时剩余", "disk"),
-        ("⏰", "喝水休息提醒", "20分钟循环", "rest"),
-        ("📈", "内存占用曲线", "已用内存百分比", "memwatch"),
+        ("能", "性能监控", "CPU/内存/网速", "perf"),
+        ("钟", "数字时钟", "大字时钟+星期", "clock"),
+        ("卷", "高考倒计时", "右键改时间", "gaokao"),
+        ("日", "自定义倒计时", "右键设目标", "countdown"),
+        ("图", "随机涩图", "点击换图", "gallery"),
+        ("骰", "骰子", "右键改面数", "dice"),
+        ("币", "抛硬币", "点击再抛", "coin"),
+        ("言", "一言卡片", "点击换句", "quote"),
+        ("点", "随机点名", "右键改人数", "roll"),
+        ("题", "随机题号", "右键改范围", "question"),
+        ("茄", "番茄钟", "右键改时长", "pomodoro"),
+        ("算", "计算器", "按键式", "calc"),
+        ("电", "电池", "电量+充电状态", "battery"),
+        ("盘", "磁盘余量", "C盘剩余", "disk"),
+        ("醒", "休息提醒", "20分钟循环", "rest"),
+        ("线", "内存曲线", "60秒历史曲线", "memwatch"),
     };
 
     private readonly Dictionary<string, Window> _open = new();
@@ -81,7 +81,7 @@ public partial class WidgetView : UserControl
                     VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = icon, FontSize = 24, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                        new TextBlock { Text = icon, FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.85 },
                         new TextBlock { Text = name, FontSize = 13, FontWeight = Avalonia.Media.FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
                         new TextBlock { Text = desc, FontSize = 10, Opacity = 0.55, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
                     },
