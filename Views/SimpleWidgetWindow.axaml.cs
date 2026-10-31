@@ -53,7 +53,7 @@ public partial class SimpleWidgetWindow : Window
     public static MatInfo Material
     {
         get => _mat;
-        set { _mat = value; foreach (var w in _all) w.ApplyMaterial(); try { WidgetWindow.Instance?.ApplyMaterial(value.CardHex); } catch { } }
+        set { _mat = value; foreach (var w in _all) w.ApplyMaterial(); try { WidgetWindow.Instance?.ApplyMaterial(value); } catch { } }
     }
     // 兼容旧接口
     public static string MaterialHex { get => _mat.CardHex; set => Material = Materials.FirstOrDefault(m => m.CardHex == value) ?? Materials[0]; }
@@ -195,14 +195,11 @@ public partial class SimpleWidgetWindow : Window
 
     private void ApplyMaterial()
     {
-        var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口整体系统模糊
-        // ★ 只请求 AcrylicBlur 才会走系统模糊；列表里带 Transparent 会被优先协商成纯透明
-        TransparencyLevelHint = blur
-            ? new[] { WindowTransparencyLevel.AcrylicBlur }
-            : new[] { WindowTransparencyLevel.Transparent };
-        Background = blur
-            ? new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.TintHex))
-            : Brushes.Transparent;
+        var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口级系统模糊
+        TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+        Background = Brushes.Transparent;
+        // ★ 直接 Win32 合成属性 API（Avalonia 的 AcrylicBlur hint 在新系统失效）
+        EnableBlurBehind(this, blur ? _mat.TintHex : null);
         _card.Background = _mat.Mode == "liquid"
             // 液态玻璃：多层对角渐变（左上高光 → 中段镜面 → 右下亮边），即使系统模糊不可用也有玻璃质感
             ? new LinearGradientBrush
@@ -264,6 +261,45 @@ public partial class SimpleWidgetWindow : Window
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+    // ===== 开源通行实现：直接 SetWindowCompositionAttribute 启用窗口级亚克力模糊 =====
+    // （Avalonia 的 AcrylicBlur hint 在 Win11 22631+ 失效：https://github.com/AvaloniaUI/Avalonia/issues/17684
+    //   PicView 等开源项目均用此 P/Invoke 方案：ACCENT_ENABLE_ACRYLICBLURBEHIND）
+    private enum AccentState { DISABLED = 0, GRADIENT = 1, TRANSPARENTGRADIENT = 2, BLURBEHIND = 3, ACRYLICBLURBEHIND = 4 }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AccentPolicy { public AccentState AccentState; public int AccentFlags; public uint GradientColor; public int AnimationId; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowCompositionAttributeData { public int Attribute; public IntPtr Data; public int SizeOfData; }
+    [DllImport("user32.dll")]
+    private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+    /// <summary>窗口级亚克力模糊（真实模糊窗口背后的桌面内容）。tint 传 null 关闭。</summary>
+    public static void EnableBlurBehind(Window w, string? argbTint)
+    {
+        try
+        {
+            var hwnd = w.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd == IntPtr.Zero) return;
+            var ap = new AccentPolicy();
+            if (argbTint != null)
+            {
+                var c = Avalonia.Media.Color.Parse(argbTint); // #AARRGGBB
+                ap.AccentState = AccentState.ACRYLICBLURBEHIND;
+                ap.GradientColor = (uint)((c.A << 24) | (c.B << 16) | (c.G << 8) | c.R); // Win32 要 ABGR
+            }
+            var size = Marshal.SizeOf<AccentPolicy>();
+            var data = new WindowCompositionAttributeData
+            {
+                Attribute = 19 /* WCA_ACCENT_POLICY */,
+                Data = Marshal.AllocHGlobal(size),
+                SizeOfData = size,
+            };
+            Marshal.StructureToPtr(ap, data.Data, false);
+            SetWindowCompositionAttribute(hwnd, ref data);
+            Marshal.FreeHGlobal(data.Data);
+        }
+        catch { }
+    }
 
     private void TryLoadImages()
     {

@@ -17,24 +17,58 @@ public partial class WidgetWindow : Window
     /// <summary>当前实例（主窗口开关用）</summary>
     public static WidgetWindow? Instance;
 
-    /// <summary>应用材质（由 SimpleWidgetWindow.Material 广播）+ 字色反色</summary>
-    public void ApplyMaterial(string hex)
+    /// <summary>应用完整材质（模糊/液态玻璃/字色反色），由 SimpleWidgetWindow.Material 广播</summary>
+    public void ApplyMaterial(SimpleWidgetWindow.MatInfo m)
     {
-        Card.Background = Avalonia.Media.Brush.Parse(hex);
-        // 亮度判断：浅材质黑字，深材质白字（与小组件一致）
+        var blur = m.Mode != "solid";
+        // 窗口级亚克力模糊（与小组件同一 Win32 方案）
+        SimpleWidgetWindow.EnableBlurBehind(this, blur ? m.TintHex : null);
+
+        // DWM 圆角，消除系统模糊层方形感
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+                if (hwnd != IntPtr.Zero) { int pref = 2; _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4); }
+            }
+            catch { }
+        }
+
+        // 卡片底：液态玻璃=多层渐变，其余=纯色
+        Card.Background = m.Mode == "liquid"
+            ? new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Avalonia.Media.Color.Parse("#90FFFFFF"), 0),
+                    new GradientStop(Avalonia.Media.Color.Parse("#40505060"), 0.35),
+                    new GradientStop(Avalonia.Media.Color.Parse("#20404050"), 0.6),
+                    new GradientStop(Avalonia.Media.Color.Parse("#70F0F4FF"), 1),
+                },
+            }
+            : Avalonia.Media.Brush.Parse(m.CardHex);
+
+        // 字色按材质亮度反色（浅材质黑字，深材质白字）
+        var hex = m.CardHex;
         var r = Convert.ToInt32(hex.Substring(1, 2), 16);
         var g = Convert.ToInt32(hex.Substring(3, 2), 16);
         var b = Convert.ToInt32(hex.Substring(5, 2), 16);
-        var fg = r + g + b < 330 ? Avalonia.Media.Brushes.White : Avalonia.Media.Brushes.Black;
+        var fg = r + g + b < 330 ? Brushes.White : Brushes.Black;
         SetFg(this);
         void SetFg(object? o)
         {
-            if (o is Avalonia.Controls.TextBlock tb) tb.Foreground = fg;
-            if (o is Avalonia.Controls.Button btn && (btn.Content is string || btn.Content is Avalonia.Controls.TextBlock)) btn.Foreground = fg;
+            if (o is TextBlock tb) tb.Foreground = fg;
+            if (o is Button btn && (btn.Content is string || btn.Content is TextBlock)) btn.Foreground = fg;
             if (o is Avalonia.LogicalTree.ILogical l)
                 foreach (var c in l.LogicalChildren) SetFg(c);
         }
     }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
     private PerformanceCounter? _cpu;
     private PerformanceCounter? _net;
     private readonly Stopwatch _sw = Stopwatch.StartNew();
