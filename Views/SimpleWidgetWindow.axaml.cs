@@ -203,7 +203,21 @@ public partial class SimpleWidgetWindow : Window
         Background = blur
             ? new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.TintHex))
             : Brushes.Transparent;
-        _card.Background = new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
+        _card.Background = _mat.Mode == "liquid"
+            // 液态玻璃：多层对角渐变（左上高光 → 中段镜面 → 右下亮边），即使系统模糊不可用也有玻璃质感
+            ? new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Avalonia.Media.Color.Parse("#90FFFFFF"), 0),
+                    new GradientStop(Avalonia.Media.Color.Parse("#40505060"), 0.35),
+                    new GradientStop(Avalonia.Media.Color.Parse("#20404050"), 0.6),
+                    new GradientStop(Avalonia.Media.Color.Parse("#70F0F4FF"), 1),
+                },
+            }
+            : new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
 
         // 液态玻璃：白色渐变高光描边；其余半透明白描边
         _card.BorderBrush = _mat.Mode == "liquid"
@@ -497,6 +511,19 @@ public partial class SimpleWidgetWindow : Window
                 break;
         }
         panel.Children.Add(ok);
+
+        // ★ 通用：置顶切换（每个小组件独立）
+        var topBtn = new Button
+        {
+            Content = Topmost ? "取消置顶（当前：置顶）" : "设为置顶（当前：不置顶）",
+            HorizontalAlignment = HorizontalAlignment.Left,
+        };
+        topBtn.Click += (_, _) =>
+        {
+            Topmost = !Topmost;
+            topBtn.Content = Topmost ? "取消置顶（当前：置顶）" : "设为置顶（当前：不置顶）";
+        };
+        panel.Children.Add(topBtn);
         ok.Click += (_, _) =>
         {
             try
