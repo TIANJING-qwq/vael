@@ -10,13 +10,7 @@ namespace SBtools.Views;
 
 public partial class WidgetView : UserControl
 {
-    private static readonly (string Hex, string Name)[] _materials =
-    {
-        ("#D0202020", "曜石黑"), ("#E0F3F3F3", "云雾白"),
-        ("#80FFFFFF", "玻璃"), ("#D01F3D3B", "薄荷"),
-        ("#D03B2A6E", "紫罗兰"), ("#CCB01A2A", "绯红"),
-        ("#D0142A4C", "深空蓝"), ("#C0FFFFFF", "毛玻璃"),
-    };
+    // 材质定义移至 SimpleWidgetWindow.Materials（含模糊模式与字色反色）
 
     // (Segoe Fluent 图标字形, 名称, 说明, Key)：全部自实现功能
     private static readonly (string, string, string, string)[] _widgets =
@@ -45,22 +39,23 @@ public partial class WidgetView : UserControl
     public WidgetView()
     {
         InitializeComponent();
-        foreach (var (hex, name) in _materials)
+        foreach (var m in SimpleWidgetWindow.Materials)
         {
+            var modeTag = m.Mode == "acrylic" ? "亚克力" : m.Mode == "liquid" ? "液态玻璃" : "纯色";
             var b = new Button
             {
-                Content = name, FontSize = 12,
+                Content = $"{m.Name} · {modeTag}", FontSize = 12,
                 Padding = new Avalonia.Thickness(10, 5),
                 CornerRadius = new Avalonia.CornerRadius(6),
-                Background = Brush.Parse(hex),
-                Foreground = hex.Contains("F3F3F3") || hex == "#C0FFFFFF" || hex == "#80FFFFFF" ? Brushes.Black : Brushes.White,
+                Background = Brush.Parse(m.CardHex),
+                Foreground = m.ForeBrush,
                 Margin = new Avalonia.Thickness(0, 0, 8, 8),
-                Tag = hex,
+                Tag = m,
             };
             b.Click += (_, _) =>
             {
-                SimpleWidgetWindow.MaterialHex = hex; // 实时广播到所有已开小组件
-                MainWindow.PushToast("🎨", $"材质已切换：{name}（全部小组件实时生效）", 3);
+                SimpleWidgetWindow.Material = m; // 实时广播（含字色反色/系统模糊/圆角）
+                MainWindow.PushToast("材质", $"已切换：{m.Name}（{modeTag}）", 3);
             };
             MaterialPanel.Children.Add(b);
         }

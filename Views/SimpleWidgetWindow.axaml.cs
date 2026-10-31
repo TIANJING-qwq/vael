@@ -28,17 +28,35 @@ public partial class SimpleWidgetWindow : Window
         public string Title = "";
     }
 
-    private static string _materialHex = "#D0202020";
-    public static string MaterialHex
+    // ===== 材质系统：mode = solid(纯色) / acrylic(系统模糊) / liquid(亚克力+高光边) =====
+    public sealed record MatInfo(string Name, string CardHex, string TintHex, string Mode)
     {
-        get => _materialHex;
-        set
-        {
-            _materialHex = value;
-            foreach (var w in _all) w.ApplyMaterial();
-            try { WidgetWindow.Instance?.ApplyMaterial(value); } catch { }
-        }
+        public bool Dark => Convert.ToInt32(CardHex.Substring(1, 2), 16) +
+                            Convert.ToInt32(CardHex.Substring(3, 2), 16) +
+                            Convert.ToInt32(CardHex.Substring(5, 2), 16) < 330;
+        public Avalonia.Media.IBrush ForeBrush => Dark ? Brushes.White : Brushes.Black;
     }
+
+    public static readonly MatInfo[] Materials =
+    {
+        new("曜石黑", "#D0202020", "#00000000", "solid"),
+        new("云雾白", "#E0F5F5F5", "#00000000", "solid"),
+        new("薄荷",   "#D01F3D3B", "#00000000", "solid"),
+        new("紫罗兰", "#D03B2A6E", "#00000000", "solid"),
+        new("玻璃",   "#30FFFFFF", "#50202020", "acrylic"),
+        new("毛玻璃", "#60303030", "#90303030", "acrylic"),
+        new("亚克力", "#40FFFFFF", "#B0202020", "acrylic"),
+        new("液态玻璃", "#50F0F4FF", "#80505060", "liquid"),
+    };
+
+    private static MatInfo _mat = Materials[0];
+    public static MatInfo Material
+    {
+        get => _mat;
+        set { _mat = value; foreach (var w in _all) w.ApplyMaterial(); try { WidgetWindow.Instance?.ApplyMaterial(value.CardHex); } catch { } }
+    }
+    // 兼容旧接口
+    public static string MaterialHex { get => _mat.CardHex; set => Material = Materials.FirstOrDefault(m => m.CardHex == value) ?? Materials[0]; }
     private static readonly List<SimpleWidgetWindow> _all = new();
 
     private readonly Kind _kind;
@@ -83,7 +101,7 @@ public partial class SimpleWidgetWindow : Window
         Height = kind is Kind.Gallery or Kind.Calc ? 260 : kind is Kind.Battery && cfg.Title == "内存占用" ? 190 : 150;
         SystemDecorations = SystemDecorations.None;
         ShowInTaskbar = false;
-        TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+        TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent, WindowTransparencyLevel.AcrylicBlur };
         Background = Brushes.Transparent;
         Topmost = true;
 
@@ -175,7 +193,59 @@ public partial class SimpleWidgetWindow : Window
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
-    private void ApplyMaterial() => _card.Background = Brush.Parse(_materialHex);
+    private void ApplyMaterial()
+    {
+        var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口整体系统模糊
+        Background = blur
+            ? new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.TintHex))
+            : Brushes.Transparent;
+        _card.Background = new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
+
+        // 液态玻璃：白色渐变高光描边；其余半透明白描边
+        _card.BorderBrush = _mat.Mode == "liquid"
+            ? new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Avalonia.Media.Color.Parse("#C0FFFFFF"), 0),
+                    new GradientStop(Avalonia.Media.Color.Parse("#30FFFFFF"), 0.5),
+                    new GradientStop(Avalonia.Media.Color.Parse("#A0FFFFFF"), 1),
+                },
+            }
+            : Brush.Parse("#33FFFFFF");
+        _card.BorderThickness = new Avalonia.Thickness(_mat.Mode == "liquid" ? 1.5 : 1);
+
+        // ★ 字色按材质亮度反色（白底黑字 / 深底白字）
+        SetForegrounds(_card, _mat.ForeBrush);
+
+        // DWM 圆角（Win11：消除系统模糊层的方形感）
+        if (blur && OperatingSystem.IsWindows())
+        {
+            try
+            {
+                var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+                if (hwnd != IntPtr.Zero)
+                {
+                    int pref = 2; // DWMWCP_ROUND
+                    _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
+                }
+            }
+            catch { }
+        }
+    }
+
+    private static void SetForegrounds(object? o, IBrush brush)
+    {
+        if (o is TextBlock tb) tb.Foreground = brush;
+        if (o is Button btn && (btn.Content is string || btn.Content is TextBlock)) btn.Foreground = brush;
+        if (o is Avalonia.LogicalTree.ILogical l)
+            foreach (var c in l.LogicalChildren) SetForegrounds(c, brush);
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
     private void TryLoadImages()
     {
