@@ -5,12 +5,12 @@
         Width="220" Height="150"
         SystemDecorations="None"
         ShowInTaskbar="False"
-        TransparencyLevelHint="AcrylicBlur"
+        TransparencyLevelHint="Transparent"
         Background="Transparent"
         Topmost="True">
 
     <Border x:Name="Card"
-            Background="#C8202020"
+            Background="#D0202020"
             CornerRadius="12"
             BorderThickness="1"
             BorderBrush="#33FFFFFF"

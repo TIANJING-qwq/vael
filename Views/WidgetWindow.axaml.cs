@@ -23,7 +23,12 @@ public partial class WidgetWindow : Window
     private bool _animDone;
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORYSTATUSEX { public uint dwLength, dwMemoryLoad; public ulong ullTotalPhys, ullAvailPhys, ullAvailVirtual, ullTotalVirtual, ullAvailExtendedVirtual; }
+    private struct MEMORYSTATUSEX
+    {
+        public uint dwLength, dwMemoryLoad;
+        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile,
+                     ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
+    }
     [DllImport("kernel32.dll")] private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
 
     public WidgetWindow()
