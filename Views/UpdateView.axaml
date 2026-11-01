@@ -30,64 +30,12 @@
             </StackPanel>
             <TextBlock x:Name="StatusText" Opacity="0.65" FontSize="13" Text="就绪" TextWrapping="Wrap" />
 
-            <!-- 版本日志：时间线卡片 -->
+            <!-- 版本日志：时间线卡片（跟随 GitHub Releases，离线回退内置） -->
             <TextBlock Text="版本日志" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0" />
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="10" Padding="20,14">
-                <StackPanel Spacing="14">
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.7" FontSize="15" FontWeight="SemiBold" />
-                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程&#10;&#8226; 修复启动崩溃与示例插件页重复注册&#10;&#8226; 更新页徽章改为测试版"
-                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.6" FontSize="15" FontWeight="SemiBold" />
-                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; 插件系统全面开放：可创建侧边栏选项卡、注册小组件卡片、弹独立窗口&#10;&#8226; 插件页一键启用/禁用（立即生效并持久化，UI 同步增删）&#10;&#8226; 内置示例插件演示全部 API；插件文档 2.0 重写&#10;&#8226; 全新开屏动画"
-                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.5" FontSize="15" FontWeight="SemiBold" />
-                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; 小组件全面进化：统一窗体 + 会话记忆（位置/置顶/参数）&#10;&#8226; 抛硬币上抛旋转动画、点名/抽号老虎机减速动画&#10;&#8226; 开关窗非线性淡入淡出；涩图历史回退（中键/按钮）&#10;&#8226; 云母/亚克力材质与主界面同源，下拉实时切换&#10;&#8226; 内存 60 秒曲线 · 网速自动换单位 · 按键式计算器"
-                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.4" FontSize="15" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; 小组件管理页：16 项自实现桌面小组件&#10;&#8226; 点击开启 / 再次点击关闭 / 右键详细配置&#10;&#8226; 常见问题 115 条 · 优化大全 114 项"
-                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.2" FontSize="15" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; Windows 更新改用安装包静默升级&#10;&#8226; CI 产出安装包；程序集元数据补全"
-                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.1" FontSize="15" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <TextBlock Text="&#8226; 关于页隐藏彩蛋&#10;&#8226; 下拉框非线性动画"
-                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
-                    </StackPanel>
-                </StackPanel>
+                <StackPanel x:Name="ChangelogPanel" Spacing="14"/>
             </Border>
 
         </StackPanel>

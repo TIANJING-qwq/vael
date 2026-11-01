@@ -144,6 +144,33 @@ public sealed class UpdateService
         }
     }
 
+    /// <summary>获取 GitHub Releases 在线版本日志（tag, 正文），失败返回空</summary>
+    public async Task<System.Collections.Generic.List<(string Tag, string Body)>> GetOnlineChangelogAsync(int count = 10)
+    {
+        var result = new System.Collections.Generic.List<(string, string)>();
+        try
+        {
+            string json;
+            using (var http = new HttpClient())
+            {
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Vael-Updater");
+                http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                http.Timeout = TimeSpan.FromSeconds(20);
+                json = await http.GetStringAsync(
+                    $"https://api.github.com/repos/{GithubOwner}/{GithubRepo}/releases?per_page={count}");
+            }
+            foreach (var rel in Newtonsoft.Json.Linq.JArray.Parse(json))
+            {
+                var tag = (string?)rel["tag_name"] ?? "?";
+                var body = ((string?)rel["body"] ?? "").Trim();
+                if (tag.StartsWith("v", StringComparison.OrdinalIgnoreCase)) tag = tag[1..];
+                result.Add((tag, body));
+            }
+        }
+        catch (Exception ex) { LogService.Log($"在线版本日志获取失败: {ex.Message}", "更新"); }
+        return result;
+    }
+
     /// <summary>更新流程进行中（检查/下载/安装互斥，防自动检查与下载并发打架）</summary>
     public bool Busy { get; private set; }
 
@@ -197,8 +224,8 @@ public sealed class UpdateService
             await DownloadFileAsync((ConfigManager.Instance.UpdateProxy ?? "") + dl,
                 setupPath, CancellationToken.None);
 
-            LogService.Log($"安装包就绪: {setupPath}，启动静默升级", "更新");
-            Process.Start(new ProcessStartInfo(setupPath, "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES")
+            LogService.Log($"安装包就绪: {setupPath}，启动更新器（带进度条，装完自动重启）", "更新");
+            Process.Start(new ProcessStartInfo(setupPath, "/SILENT /NORESTART /SUPPRESSMSGBOXES")
             { UseShellExecute = true });
             await Task.Delay(1000);
             Environment.Exit(0);
@@ -260,8 +287,9 @@ public sealed class UpdateService
                     LogService.Log($"安装包下载完成: {setupPath}，启动静默升级", "更新");
 
                     try { DownloadCompleted?.Invoke(true); } catch { }
+                    // ★ /SILENT：显示安装进度条（更新器窗口），装完由 installer [Code] 自动重启程序
                     Process.Start(new ProcessStartInfo(setupPath,
-                        "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES")
+                        "/SILENT /NORESTART /SUPPRESSMSGBOXES")
                     { UseShellExecute = true });
                     await Task.Delay(1000);
                     Environment.Exit(0);

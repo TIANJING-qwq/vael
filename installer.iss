@@ -36,5 +36,17 @@ Name: "{autodesktop}\Vael"; Filename: "{app}\SBtools.exe"; Tasks: desktopicon
 [Run]
 Filename: "{app}\SBtools.exe"; Description: "立即启动"; Flags: nowait postinstall skipifsilent
 
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  // ★ 更新器流程：静默升级（/SILENT，含进度条）安装完成后自动重启程序
+  if (CurStep = ssPostInstall) and WizardSilent() then
+  begin
+    Exec(ExpandConstant('{app}\SBtools.exe'), '', '', SW_SHOW, ewNoWait, ResultCode);
+  end;
+end;
+
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

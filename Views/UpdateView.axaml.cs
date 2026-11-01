@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using SBtools.Services;
 
 namespace SBtools.Views;
@@ -12,7 +15,7 @@ public partial class UpdateView : UserControl
     {
         InitializeComponent();
         RefreshInfo();
-        Loaded += (_, _) => RefreshInfo();
+        Loaded += (_, _) => { RefreshInfo(); _ = LoadChangelogAsync(); };
     }
 
     private void RefreshInfo()
@@ -32,22 +35,102 @@ public partial class UpdateView : UserControl
     /// <summary>版本代号（全球地名 / 小米机型代号体系）</summary>
     public static string VersionCodename => "Umi";
 
-    /// <summary>各版本更新说明（新增版本往这里加一行）</summary>
-    public static string ChangelogFor(string _) =>
-        """
-        0.5.3「曦月」
-        • 新增：实验室 → 更新 选项卡（版本号 / 代号 / 检查更新 / 强制测试更新）
-        • 新增：CCTV 定时播放支持按周几重复（全不选 = 每天）
-        • 修复：已是最新版本仍触发下载的问题（版本守卫）
-        • 安全：Windows 更新只走安装包静默升级，下载位置改 %TEMP% 固定文件名
+    // ============================================================
+    // 版本日志：跟随 GitHub Releases，离线回退内置
+    // ============================================================
 
-        0.5.2
-        • Windows 更新改用 Inno Setup 安装包静默升级
-        • CI 新增安装包产物；程序集元数据补全
+    private bool _changelogLoaded;
 
-        0.5.1
-        • 关于页隐藏彩蛋（连点 Logo）
-        """;
+    private async System.Threading.Tasks.Task LoadChangelogAsync()
+    {
+        if (_changelogLoaded) return;
+        _changelogLoaded = true;
+        RenderChangelog(FallbackChangelog, online: false);
+        try
+        {
+            var online = await UpdateService.Instance.GetOnlineChangelogAsync();
+            if (online.Count > 0)
+                RenderChangelog(online, online: true);
+        }
+        catch { /* 保持内置 */ }
+    }
+
+    /// <summary>渲染时间线（首条蓝点，其余灰点）</summary>
+    private void RenderChangelog(List<(string Tag, string Body)> entries, bool online)
+    {
+        ChangelogPanel.Children.Clear();
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var (tag, body) = entries[i];
+            var header = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 10 };
+            header.Children.Add(new Ellipse
+            {
+                Width = 8, Height = 8, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Fill = new SolidColorBrush(i == 0
+                    ? Avalonia.Media.Color.Parse("#0078D4")
+                    : Avalonia.Media.Color.Parse("#999999")),
+            });
+            header.Children.Add(new TextBlock
+            {
+                Text = "v" + tag, FontSize = 15, FontWeight = FontWeight.SemiBold,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            });
+            if (i == 0)
+                header.Children.Add(new TextBlock
+                {
+                    Text = online ? "GitHub" : "内置",
+                    FontSize = 11, Opacity = 0.5,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                });
+
+            var item = new StackPanel { Spacing = 4 };
+            item.Children.Add(header);
+            if (!string.IsNullOrWhiteSpace(body))
+                item.Children.Add(new TextBlock
+                {
+                    Text = body, FontSize = 13, Opacity = 0.75,
+                    Margin = new Avalonia.Thickness(18, 0, 0, 0),
+                    TextWrapping = TextWrapping.Wrap,
+                });
+            ChangelogPanel.Children.Add(item);
+        }
+    }
+
+    /// <summary>离线回退：内置版本日志（在线获取失败时显示）</summary>
+    private static List<(string Tag, string Body)> FallbackChangelog { get; } = new()
+    {
+        ("0.5.7", """
+            • 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程
+            • 修复启动崩溃与示例插件页重复注册
+            • 更新页徽章改为测试版
+            """),
+        ("0.5.6", """
+            • 插件系统全面开放：可创建侧边栏选项卡、注册小组件卡片、弹独立窗口
+            • 插件页一键启用/禁用（立即生效并持久化，UI 同步增删）
+            • 内置示例插件演示全部 API；插件文档 2.0 重写
+            • 全新开屏动画
+            """),
+        ("0.5.5", """
+            • 小组件全面进化：统一窗体 + 会话记忆（位置/置顶/参数）
+            • 抛硬币上抛旋转动画、点名/抽号老虎机减速动画
+            • 开关窗非线性淡入淡出；涩图历史回退（中键/按钮）
+            • 云母/亚克力材质与主界面同源，下拉实时切换
+            • 内存 60 秒曲线 · 网速自动换单位 · 按键式计算器
+            """),
+        ("0.5.4", """
+            • 小组件管理页：16 项自实现桌面小组件
+            • 点击开启 / 再次点击关闭 / 右键详细配置
+            • 常见问题 115 条 · 优化大全 114 项
+            """),
+        ("0.5.2", """
+            • Windows 更新改用安装包静默升级
+            • CI 产出安装包；程序集元数据补全
+            """),
+        ("0.5.1", """
+            • 关于页隐藏彩蛋
+            • 下拉框非线性动画
+            """),
+    };
 
     private async void CheckUpdateButton_Click(object? sender, RoutedEventArgs e)
         => await RunUpdateAsync(false);
