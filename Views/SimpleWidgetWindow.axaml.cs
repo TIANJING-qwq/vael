@@ -38,11 +38,11 @@ public partial class SimpleWidgetWindow : Window
         public Avalonia.Media.IBrush ForeBrush => Dark ? Brushes.White : Brushes.Black;
     }
 
-    // DWMWA_SYSTEMBACKDROP_TYPE: 1=云母(Mica) 2=亚克力(Acrylic)，与主窗口 Mica 同一系统实现
+    // DWMWA_SYSTEMBACKDROP_TYPE: 1=云母；亚克力用 ACCENT 合成模糊（对无边框窗最可靠）
     public static readonly MatInfo[] Materials =
     {
-        new("云母", "#30202020", 1),
-        new("亚克力", "#55202020", 2),
+        new("云母", "#40282828", 1),
+        new("亚克力", "#48282828", 2),
     };
 
     private static MatInfo _mat = Materials[0];
@@ -161,11 +161,12 @@ public partial class SimpleWidgetWindow : Window
         Content = _card;
         ApplyMaterial();
 
-        // 窗体：左键空白=拖动 / 右键=配置（控件自身动作已 Handled，不会到这）
+        // 窗体：左键空白=拖动 / 中键=涩图上一张 / 右键=配置（控件自身动作已 Handled，不会到这）
         PointerPressed += (_, e) =>
         {
             var pt = e.GetCurrentPoint(this);
             if (pt.Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
+            else if (pt.Properties.IsMiddleButtonPressed) { Prev(); e.Handled = true; }
             else if (pt.Properties.IsLeftButtonPressed) BeginMoveDrag(e);
         };
 
@@ -181,6 +182,27 @@ public partial class SimpleWidgetWindow : Window
         t.Start();
         Tick();
         Action(); // 初始内容
+    }
+
+    private bool _reallyClosing;
+
+    /// <summary>关闭前播淡出+缩退动画（非线性），动画完再真关</summary>
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+        if (_reallyClosing || !IsVisible) return;
+        _reallyClosing = true;
+        e.Cancel = true;
+        _card.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(260), Easing = new Avalonia.Animation.Easings.ExponentialEaseOut() },
+            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(280), Easing = new Avalonia.Animation.Easings.ExponentialEaseOut() },
+        };
+        _card.Opacity = 0;
+        _card.RenderTransform = TransformOperations.Parse("scale(0.86)");
+        var t = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        t.Tick += (_, _) => { t.Stop(); Close(); };
+        t.Start();
     }
 
     protected override void OnOpened(EventArgs e)
@@ -204,17 +226,17 @@ public partial class SimpleWidgetWindow : Window
 
     private void ApplyMaterial()
     {
-        // ★ 与主界面一模一样：DWM 系统背景（云母/亚克力）
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
         Background = Brushes.Transparent;
-        EnableBlurBehind(this, null); // 清掉旧 ACCENT 残留
+        // 亚克力：ACCENT 合成模糊（真模糊）；云母：DWM 系统背景（无边框窗尽力生效）+ 半透明底
+        EnableBlurBehind(this, _mat.Backdrop == 2 ? "#99202020" : null);
         try
         {
             var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
             if (hwnd != IntPtr.Zero)
             {
-                var bd = _mat.Backdrop;
-                _ = DwmSetWindowAttribute(hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, ref bd, 4);
+                var bd = 1; // 云母尝试系统背景（仅云母模式）
+                if (_mat.Backdrop == 1) _ = DwmSetWindowAttribute(hwnd, 38, ref bd, 4);
                 int pref = 2; // DWM 圆角
                 _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
             }
@@ -602,22 +624,46 @@ public partial class SimpleWidgetWindow : Window
         catch { }
     }
 
+    private Avalonia.Threading.DispatcherTimer? _pick;
+
+    /// <summary>老虎机式抽取动画：快速跳变 → 平方减速 → 定格（非线性）</summary>
+    private void AnimatedPick(string[] pool, Func<string> final, string sub)
+    {
+        _pick?.Stop();
+        var dt = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        int i = 0;
+        dt.Tick += (_, _) =>
+        {
+            i++;
+            if (i >= 16) { dt.Stop(); _big.Text = final(); _sub.Text = sub; return; }
+            _big.Text = pool[_rnd.Next(pool.Length)];
+            dt.Interval = TimeSpan.FromMilliseconds(40 + i * i); // 平方减速
+        };
+        dt.Start();
+        _pick = dt;
+    }
+
     private void Action()
     {
         switch (_kind)
         {
             case Kind.Dice:
-                _big.Text = $"{_rnd.Next(1, _cfg.DiceFaces + 1)} 点";
-                _sub.Text = $"{_cfg.DiceFaces} 面骰 · 点击再掷 · 右键配置";
+            {
+                var faces = _cfg.DiceFaces;
+                var pool = Enumerable.Range(1, faces).Select(n => $"{n}").ToArray();
+                AnimatedPick(pool, () => $"{_rnd.Next(1, faces + 1)} 点", $"{faces} 面骰 · 点击再掷 · 右键配置");
                 break;
+            }
             case Kind.Coin:
-                _big.Text = _rnd.Next(2) == 0 ? "正面" : "反面";
-                _sub.Text = "点击再抛";
+                AnimatedPick(new[] { "正面", "反面" }, () => _rnd.Next(2) == 0 ? "正面" : "反面", "点击再抛");
                 break;
             case Kind.Roll:
-                _big.Text = $"第 {_rnd.Next(1, _cfg.Range + 1)} 号";
-                _sub.Text = $"范围 1-{_cfg.Range} · 点击重抽 · 右键配置";
+            {
+                var range = _cfg.Range;
+                var pool = Enumerable.Range(1, Math.Min(range, 60)).Select(n => $"第 {n} 号").ToArray();
+                AnimatedPick(pool, () => $"第 {_rnd.Next(1, range + 1)} 号", $"范围 1-{range} · 点击重抽 · 右键配置");
                 break;
+            }
             case Kind.Quote:
                 var qs = new[] { "行到水穷处，坐看云起时。", "日拱一卒，功不唐捐。", "凡是过往，皆为序章。", "山不让尘，川不辞盈。", "追风赶月莫停留，平芜尽处是春山。", "路虽远，行则将至。", "不积跬步，无以至千里。" };
                 _big.FontSize = 15;
@@ -629,19 +675,37 @@ public partial class SimpleWidgetWindow : Window
         }
     }
 
+    private readonly Stack<string> _hist = new();
+    private string? _cur;
+
     private void Shuffle()
     {
         if (_zipEntries == null || _zipEntries.Length == 0) { _sub.Text = "无缓存图（先在涩图合集下载）"; return; }
+        ShowEntry(_zipEntries[_rnd.Next(_zipEntries.Length)]);
+        _sub.Text = $"共 {_zipEntries.Length} 张 · 左键换图 · 中键上一张";
+    }
+
+    /// <summary>上一张（历史栈）</summary>
+    private void Prev()
+    {
+        if (_kind != Kind.Gallery) return;
+        if (_hist.Count == 0) { _sub.Text = "没有更早的了"; return; }
+        ShowEntry(_hist.Pop());
+        _sub.Text = $"回退 · 剩余历史 {_hist.Count} 张 · 中键继续回退";
+    }
+
+    private void ShowEntry(string name)
+    {
         try
         {
             using var zip = System.IO.Compression.ZipFile.OpenRead(Services.GalleryService.ZipPath);
-            var entry = zip.GetEntry(_zipEntries[_rnd.Next(_zipEntries.Length)]);
-            if (entry == null) return;
+            var entry = zip.GetEntry(name) ?? throw new IOException();
             using var ms = new MemoryStream();
             using (var s = entry.Open()) s.CopyTo(ms);
             ms.Position = 0;
             _img!.Source = new Avalonia.Media.Imaging.Bitmap(ms);
-            _sub.Text = $"共 {_zipEntries.Length} 张 · 点击换图";
+            if (_cur != null && _cur != name) _hist.Push(_cur);
+            _cur = name;
         }
         catch { }
     }
@@ -757,6 +821,9 @@ public partial class SimpleWidgetWindow : Window
             case Kind.Gallery:
                 TryLoadImages(); Shuffle();
                 panel.Children.Add(new TextBlock { Text = $"已重新加载 {_zipEntries?.Length ?? 0} 张图" });
+                var prevBtn = new Button { Content = "返回上一张", HorizontalAlignment = HorizontalAlignment.Left };
+                prevBtn.Click += (_, _) => { Prev(); w.Close(); };
+                panel.Children.Add(prevBtn);
                 break;
             default:
                 panel.Children.Add(new TextBlock { Text = "该组件无配置项。\n左键=动作 · 标题栏拖动=移动 · 右键=本配置窗。" });

@@ -12,9 +12,9 @@
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="10" Padding="16">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="🎨 小组件材质" FontSize="15" FontWeight="SemiBold" />
+                    <TextBlock Text="小组件材质（云母 / 亚克力，与主界面同源）" FontSize="15" FontWeight="SemiBold" />
                     <WrapPanel x:Name="MaterialPanel"/>
-                    <TextBlock Text="新开的小组件将使用所选材质；拖动移动，右键换图/关闭。" FontSize="12" Opacity="0.55"/>
+                    <TextBlock Text="左键=动作 · 拖动移动 · 右键=配置与置顶 · 涩图中键=上一张 · 退出自动记忆全部小组件" FontSize="12" Opacity="0.55"/>
                 </StackPanel>
             </Border>
 

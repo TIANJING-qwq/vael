@@ -56,6 +56,9 @@ public partial class WidgetView : UserControl
 
         foreach (var (icon, name, desc, key) in _widgets)
         {
+            // 封面图（网络随机图，失败静默回退纯色卡）
+            var img = new Image { Stretch = Stretch.UniformToFill, Source = null, Opacity = 0 };
+            _ = LoadCover(img, key);
             var b = new Button
             {
                 Width = 165, Height = 92,
@@ -63,23 +66,54 @@ public partial class WidgetView : UserControl
                 Padding = new Avalonia.Thickness(0),
                 CornerRadius = new Avalonia.CornerRadius(10),
                 Tag = key,
-                Content = new StackPanel
+                Content = new Grid
                 {
-                    Spacing = 4,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = icon, FontSize = 28, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.9,
-                                        FontFamily = new Avalonia.Media.FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets") },
-                        new TextBlock { Text = name, FontSize = 13, FontWeight = Avalonia.Media.FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
-                        new TextBlock { Text = desc, FontSize = 10, Opacity = 0.55, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                        img,
+                        new Border { Background = new LinearGradientBrush
+                        {
+                            StartPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
+                            EndPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                            GradientStops =
+                            {
+                                new GradientStop(Avalonia.Media.Color.Parse("#D0181818"), 0),
+                                new GradientStop(Avalonia.Media.Color.Parse("#40181818"), 1),
+                            },
+                        } },
+                        new StackPanel
+                        {
+                            Spacing = 4,
+                            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                            Children =
+                            {
+                                new TextBlock { Text = icon, FontSize = 28, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.95,
+                                                FontFamily = new Avalonia.Media.FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets") },
+                                new TextBlock { Text = name, FontSize = 13, FontWeight = Avalonia.Media.FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Foreground = Brushes.White },
+                                new TextBlock { Text = desc, FontSize = 10, Opacity = 0.8, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Foreground = Brushes.White },
+                            },
+                        },
                     },
                 },
             };
             b.Click += Widget_Click;
             WidgetGrid.Children.Add(b);
         }
+    }
+
+    /// <summary>异步加载卡片封面图（picsum 随机图，seed=组件名保持稳定）</summary>
+    private static async System.Threading.Tasks.Task LoadCover(Image img, string seed)
+    {
+        try
+        {
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+            var bytes = await http.GetByteArrayAsync($"https://picsum.photos/seed/{seed}/330/184");
+            using var ms = new System.IO.MemoryStream(bytes);
+            var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { img.Source = bmp; img.Opacity = 1; });
+        }
+        catch { }
     }
 
     /// <summary>点击开启，再次点击关闭</summary>
