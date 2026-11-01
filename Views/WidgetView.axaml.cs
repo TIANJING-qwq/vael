@@ -42,6 +42,7 @@ public partial class WidgetView : UserControl
     public static void RegisterPluginCard(string pluginId, string title, string desc, string icon, Action onClick)
         => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            _pluginCards.RemoveAll(c => c.PluginId == pluginId && c.Title == title); // 去重
             _pluginCards.Add((pluginId, title, desc, icon, onClick));
         });
 

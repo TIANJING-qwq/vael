@@ -103,10 +103,13 @@ public sealed class PluginManager
                     TryLoadPlugin(dll);
             }
 
-            // 激活未禁用的
+            // 激活未禁用的（内置插件在注册时已激活，跳过）
             foreach (var info in _plugins.Where(p => !string.IsNullOrEmpty(p.Id)).ToList())
+            {
+                if (_loaded.ContainsKey(info.Id)) continue; // ★ 防止双重 OnLoad → 重复注册 UI
                 if (IsEnabled(info.Id) && _known.TryGetValue(info.Id, out var plugin))
                     Activate(plugin, info);
+            }
 
             LogService.Log($"插件加载完成：{_loaded.Count}/{_plugins.Count} 激活", "插件");
         }

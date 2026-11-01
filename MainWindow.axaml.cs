@@ -273,6 +273,9 @@ public partial class MainWindow : Window
         _pluginPages[tag] = buildPage;
         var inst = _instance;
         if (inst == null) return;
+        // ★ 去重：同 tag 已存在导航项就不再加（防止重复加载叠出两个页签）
+        if (inst.NavView.MenuItems.OfType<NavigationViewItem>().Any(i => i.Tag?.ToString() == tag))
+            return;
         var item = new NavigationViewItem { Content = title, Tag = tag };
         inst.NavView.MenuItems.Add(item);
     }
