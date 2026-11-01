@@ -7,8 +7,8 @@
             <!-- 头部：大标题 + 版本徽章 -->
             <StackPanel Orientation="Horizontal" Spacing="14">
                 <TextBlock Text="更新" FontSize="30" FontWeight="Bold" VerticalAlignment="Center" />
-                <Border Background="#0078D4" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
-                    <TextBlock Text="稳定版" FontSize="12" Foreground="White" FontWeight="SemiBold" />
+                <Border Background="#F59E0B" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                    <TextBlock Text="测试版" FontSize="12" Foreground="Black" FontWeight="SemiBold" />
                 </Border>
             </StackPanel>
 

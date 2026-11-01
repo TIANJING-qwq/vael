@@ -53,7 +53,31 @@ public partial class UpdateView : UserControl
         => await RunUpdateAsync(false);
 
     private async void ForceUpdateButton_Click(object? sender, RoutedEventArgs e)
-        => await RunUpdateAsync(true);
+    {
+        // ★ 强制测试更新：无视版本比较，直接下载最新 Release 安装包并静默安装
+        StatusText.Text = "强制测试更新：获取最新版本…";
+        CheckUpdateButton.IsEnabled = ForceUpdateButton.IsEnabled = false;
+        void OnProgress(int p) => StatusText.Text = $"强制下载最新版… {p}%";
+        UpdateService.Instance.DownloadProgressChanged += OnProgress;
+        try
+        {
+            var ok = await UpdateService.Instance.ForceLatestSetupAsync();
+            if (!ok)
+                StatusText.Text = $"强制更新失败：{UpdateService.Instance.LastError ?? "未知错误"}";
+            else
+                StatusText.Text = "安装包已启动，程序即将退出完成升级…";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"强制更新失败: {ex.Message}";
+            LogService.Log($"强制测试更新异常: {ex.Message}", "更新");
+        }
+        finally
+        {
+            UpdateService.Instance.DownloadProgressChanged -= OnProgress;
+            CheckUpdateButton.IsEnabled = ForceUpdateButton.IsEnabled = true;
+        }
+    }
 
     private async System.Threading.Tasks.Task RunUpdateAsync(bool force)
     {

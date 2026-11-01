@@ -148,6 +148,72 @@ public sealed class UpdateService
     public bool Busy { get; private set; }
 
     // ============================================================
+    // ★ 强制测试更新：绕过 Updatum 的版本比较/资产过滤，直接拉最新 Release 的
+    //   安装包下载并静默安装（本地已是最新版本时也能完整走一遍升级流程）
+    // ============================================================
+    public async Task<bool> ForceLatestSetupAsync()
+    {
+        if (Busy) { LogService.Log("更新流程进行中，跳过强制测试更新", "更新"); return false; }
+        Busy = true;
+        LastError = null;
+        try
+        {
+            LogService.Log("强制测试更新：直接获取最新 Release", "更新");
+            string json;
+            using (var http = new HttpClient())
+            {
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Vael-Updater");
+                http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                http.Timeout = TimeSpan.FromSeconds(30);
+                json = await http.GetStringAsync(
+                    $"https://api.github.com/repos/{GithubOwner}/{GithubRepo}/releases/latest");
+            }
+
+            var rel = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var tagName = (string?)rel["tag_name"] ?? "?";
+            var assets = (Newtonsoft.Json.Linq.JArray?)rel["assets"];
+            string? dl = null, assetName = null;
+            foreach (var a in assets ?? new Newtonsoft.Json.Linq.JArray())
+            {
+                var an = (string?)a["name"] ?? "";
+                if (an.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                    an.Contains("Setup", StringComparison.OrdinalIgnoreCase))
+                {
+                    dl = (string?)a["browser_download_url"];
+                    assetName = an;
+                    break;
+                }
+            }
+            if (dl == null)
+            {
+                LastError = $"最新 Release（{tagName}）没有 Windows 安装包（Vael_Setup）";
+                LogService.Log(LastError, "更新");
+                return false;
+            }
+            LogService.Log($"强制测试更新：{assetName}（{tagName}）", "更新");
+
+            var setupPath = Path.Combine(Path.GetTempPath(), "Vael_Setup.exe");
+            try { File.Delete(setupPath); } catch { }
+            await DownloadFileAsync((ConfigManager.Instance.UpdateProxy ?? "") + dl,
+                setupPath, CancellationToken.None);
+
+            LogService.Log($"安装包就绪: {setupPath}，启动静默升级", "更新");
+            Process.Start(new ProcessStartInfo(setupPath, "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES")
+            { UseShellExecute = true });
+            await Task.Delay(1000);
+            Environment.Exit(0);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            LogService.Log($"强制测试更新失败: {ex.Message}", "更新");
+            return false;
+        }
+        finally { Busy = false; }
+    }
+
+    // ============================================================
     // ★ 下载：ZIP → 解压 → 展平 → 暂存到 pending_update
     // ============================================================
     public async Task<bool> DownloadAsync()
