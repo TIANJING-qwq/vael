@@ -21,6 +21,28 @@ public partial class FeaturesView : UserControl
     {
         base.OnLoaded(e);
         LoadRandomImage();
+        _ = LoadHomeChangelogAsync();
+    }
+
+    // ============================================================
+    // 本次更新卡片：跟随 GitHub Releases 最新版（离线保持内置文案）
+    // ============================================================
+    private static bool _changelogFetched;
+
+    private async Task LoadHomeChangelogAsync()
+    {
+        if (_changelogFetched) return;
+        _changelogFetched = true;
+        try
+        {
+            var releases = await UpdateService.Instance.GetOnlineChangelogAsync(1);
+            if (releases.Count == 0) return;
+            var (tag, body) = releases[0];
+            UpdateCardTitle.Text = $"本次更新 v{tag}";
+            if (!string.IsNullOrWhiteSpace(body))
+                UpdateCardBody.Text = body;
+        }
+        catch { /* 离线：保持 XAML 内置文案 */ }
     }
 
     // ============================================================

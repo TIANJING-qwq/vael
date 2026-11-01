@@ -41,24 +41,31 @@
                                Stretch="Uniform" />
                     </Border>
                     <StackPanel VerticalAlignment="Center" Spacing="3">
-                        <TextBlock Text="Vael" FontSize="30" FontWeight="Bold" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="Vael" FontSize="30" FontWeight="Bold" />
+                            <Border Background="#F59E0B" CornerRadius="6" Padding="9,3"
+                                    VerticalAlignment="Center" Margin="0,4,0,0">
+                                <TextBlock Text="测试版" FontSize="11" Foreground="Black" FontWeight="SemiBold" />
+                            </Border>
+                        </StackPanel>
                         <TextBlock Text="校园网工具箱 · CCTV 直播 · 系统工具"
                                    FontSize="13" Opacity="0.6" />
                     </StackPanel>
                 </StackPanel>
 
-                <!-- 本次更新 -->
+                <!-- 本次更新（跟随 GitHub Releases 最新版，离线显示内置） -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="10"
                         Padding="20">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="本次更新" FontSize="16" FontWeight="SemiBold" />
-                        <TextBlock Text="• 央视直播改用官方 WebView2 播放器，全屏自动播放、稳定不卡" FontSize="13" Opacity="0.75" />
-                        <TextBlock Text="• 主页改为卡片式，点击卡片进入详细设置" FontSize="13" Opacity="0.75" />
-                        <TextBlock Text="• 自定义标题栏：图标 / 返回 / 最小化 / 最大化 / 关闭" FontSize="13" Opacity="0.75" />
-                        <TextBlock Text="• 应用更名 Vael" FontSize="13" Opacity="0.75" />
+                        <TextBlock x:Name="UpdateCardTitle" Text="本次更新" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock x:Name="UpdateCardBody"
+                                   FontSize="13" Opacity="0.75" TextWrapping="Wrap"
+                                   Text="• 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程&#10;• 修复启动崩溃与示例插件页重复注册&#10;• 更新页徽章改为测试版" />
+                        <TextBlock Text="完整版本日志见「更新」页"
+                                   FontSize="11" Opacity="0.45" />
                     </StackPanel>
                 </Border>
 
