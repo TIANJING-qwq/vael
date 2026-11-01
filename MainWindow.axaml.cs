@@ -78,9 +78,18 @@ public partial class MainWindow : Window
         Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
         {
             await System.Threading.Tasks.Task.Delay(3000);
-            try { if (ConfigManager.Instance.DesktopWidgetEnabled && WidgetWindow.Instance == null) new WidgetWindow().Show(); } catch { }
             try { SimpleWidgetWindow.RestoreSession(); } catch { }
+            try
+            {
+                if (ConfigManager.Instance.DesktopWidgetEnabled &&
+                    !SimpleWidgetWindow.HasOpen(SimpleWidgetWindow.Kind.Perf))
+                    new SimpleWidgetWindow(SimpleWidgetWindow.Kind.Perf,
+                        new SimpleWidgetWindow.Config { Title = "性能监控" }).Show();
+            }
+            catch { }
         }, Avalonia.Threading.DispatcherPriority.Loaded);
+        // 退出时兜底保存小组件会话
+        Closing += (_, _) => { try { SimpleWidgetWindow.SaveSession(); } catch { } };
 
         this.AddHandler(
             PointerReleasedEvent,

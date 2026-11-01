@@ -20,7 +20,7 @@ namespace SBtools.Views;
 /// </summary>
 public partial class SimpleWidgetWindow : Window
 {
-    public enum Kind { Clock, Countdown, Gallery, Dice, Coin, Roll, Quote, Battery, Calc, Pomodoro }
+    public enum Kind { Clock, Countdown, Gallery, Dice, Coin, Roll, Quote, Battery, Calc, Pomodoro, Perf }
 
     public sealed class Config
     {
@@ -29,8 +29,8 @@ public partial class SimpleWidgetWindow : Window
         public string Title = "";
     }
 
-    // ===== 材质系统：mode = solid(纯色) / acrylic(系统模糊) / liquid(亚克力+高光边) =====
-    public sealed record MatInfo(string Name, string CardHex, string TintHex, string Mode)
+    // ===== 材质系统：与主界面同源——DWM 系统背景（云母/亚克力），下拉选择 =====
+    public sealed record MatInfo(string Name, string CardHex, int Backdrop)
     {
         public bool Dark => Convert.ToInt32(CardHex.Substring(1, 2), 16) +
                             Convert.ToInt32(CardHex.Substring(3, 2), 16) +
@@ -38,16 +38,11 @@ public partial class SimpleWidgetWindow : Window
         public Avalonia.Media.IBrush ForeBrush => Dark ? Brushes.White : Brushes.Black;
     }
 
+    // DWMWA_SYSTEMBACKDROP_TYPE: 1=云母(Mica) 2=亚克力(Acrylic)，与主窗口 Mica 同一系统实现
     public static readonly MatInfo[] Materials =
     {
-        new("曜石黑", "#D0202020", "#00000000", "solid"),
-        new("云雾白", "#E0F5F5F5", "#00000000", "solid"),
-        new("薄荷",   "#D01F3D3B", "#00000000", "solid"),
-        new("紫罗兰", "#D03B2A6E", "#00000000", "solid"),
-        new("玻璃",   "#30FFFFFF", "#50202020", "acrylic"),
-        new("毛玻璃", "#60303030", "#90303030", "acrylic"),
-        new("亚克力", "#40FFFFFF", "#B0202020", "acrylic"),
-        new("液态玻璃", "#50F0F4FF", "#80505060", "liquid"),
+        new("云母", "#30202020", 1),
+        new("亚克力", "#55202020", 2),
     };
 
     private static MatInfo _mat = Materials[0];
@@ -56,8 +51,6 @@ public partial class SimpleWidgetWindow : Window
         get => _mat;
         set { _mat = value; foreach (var w in _all) w.ApplyMaterial(); try { WidgetWindow.Instance?.ApplyMaterial(value); } catch { } }
     }
-    // 兼容旧接口
-    public static string MaterialHex { get => _mat.CardHex; set => Material = Materials.FirstOrDefault(m => m.CardHex == value) ?? Materials[0]; }
     private static readonly List<SimpleWidgetWindow> _all = new();
 
     private readonly Kind _kind;
@@ -139,6 +132,13 @@ public partial class SimpleWidgetWindow : Window
                 panel.Children.Add(_big);
                 panel.Children.Add(startStop);
                 break;
+            case Kind.Perf:
+                _big.Text = "CPU  --";
+                _sub.Text = "内存 -- · 网速 --";
+                _big.PointerPressed += (_, e) => { e.Handled = true; }; // 点击不换内容，仅拖动用
+                panel.Children.Add(_big);
+                InitPerf();
+                break;
             case Kind.Battery when cfg.Title == "内存占用":
                 _graph = new Polyline { Stroke = Brush.Parse("#60CDFF"), StrokeThickness = 1.5, Points = new List<Avalonia.Point>(), Width = 196, Height = 46, HorizontalAlignment = HorizontalAlignment.Center };
                 panel.Children.Add(_big);
@@ -170,6 +170,7 @@ public partial class SimpleWidgetWindow : Window
         };
 
         _all.Add(this);
+        EnsureAutoSave(); // ★ 定时持久化：进程被结束也能保住会话
         Closed += (_, _) => { _all.Remove(this); StopLiquid(); SaveSession(); };
         Position = new Avalonia.PixelPoint(
             (int)(Screens.Primary?.WorkingArea.Width - (int)Width - 20 ?? 1200),
@@ -203,51 +204,31 @@ public partial class SimpleWidgetWindow : Window
 
     private void ApplyMaterial()
     {
-        var blur = _mat.Mode != "solid"; // 亚克力/液态玻璃：窗口级系统模糊
+        // ★ 与主界面一模一样：DWM 系统背景（云母/亚克力）
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
         Background = Brushes.Transparent;
-        if (_mat.Mode == "liquid")
+        EnableBlurBehind(this, null); // 清掉旧 ACCENT 残留
+        try
         {
-            // ★ 液态玻璃：关闭系统模糊（消灭方形边），改用实时抓屏演算
-            EnableBlurBehind(this, null);
-            StartLiquid();
-        }
-        else
-        {
-            EnableBlurBehind(this, blur ? _mat.TintHex : null);
-            StopLiquid();
-        }
-        _card.Background = _mat.Mode == "liquid"
-            ? null // 液态玻璃：卡片自身无底色，整片都是实时抓屏模糊材质（含文字区域）
-            : new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
-
-        // 边框：液态玻璃完全无边（纯实时材质），其余细半透明白
-        _card.BorderBrush = Brush.Parse("#26FFFFFF");
-        _card.BorderThickness = new Avalonia.Thickness(_mat.Mode == "liquid" ? 0 : 1);
-
-        // ★ 字色反色：液态玻璃压暗纱层+白字（背景是实时抓屏，对比度必须靠纱层保证）；
-        //   其余按材质亮度反色（白底黑字 / 深底白字）
-        var fore = _mat.Mode == "liquid" ? Brushes.White : _mat.ForeBrush;
-        if (_scrim != null)
-            _scrim.Background = _mat.Mode == "liquid"
-                ? new SolidColorBrush(Avalonia.Media.Color.Parse("#45000000")) // 减淡纱层：透出实时材质又保可读
-                : Brushes.Transparent;
-        SetForegrounds(_card, fore);
-
-        // DWM 圆角（Win11：消除系统模糊层的方形感）
-        if (blur && OperatingSystem.IsWindows())
-        {
-            try
+            var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd != IntPtr.Zero)
             {
-                var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-                if (hwnd != IntPtr.Zero)
-                {
-                    int pref = 2; // DWMWCP_ROUND
-                    _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
-                }
+                var bd = _mat.Backdrop;
+                _ = DwmSetWindowAttribute(hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, ref bd, 4);
+                int pref = 2; // DWM 圆角
+                _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
             }
-            catch { }
         }
+        catch { }
+
+        _card.Background = new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
+        _card.BorderBrush = Brush.Parse("#26FFFFFF");
+        _card.BorderThickness = new Avalonia.Thickness(1);
+        if (_scrim != null) _scrim.Background = Brushes.Transparent;
+
+        // 字色按材质亮度反色
+        SetForegrounds(_card, _mat.ForeBrush);
+        StopLiquid();
     }
 
     // ===== 会话记录：退出时保存打开的小组件，启动时恢复 =====
@@ -303,6 +284,74 @@ public partial class SimpleWidgetWindow : Window
             }
         }
         catch { }
+    }
+
+    // ===== 性能检测（与其他小组件同一实现/样式） =====
+    private System.Diagnostics.PerformanceCounter? _pCpu, _pNet;
+    private long _pLastBytes;
+    private long _lastPerfTick;
+
+    private void InitPerf()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        _ = System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                var cpu = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total");
+                System.Diagnostics.PerformanceCounter? net = null;
+                try
+                {
+                    var names = new System.Diagnostics.PerformanceCounterCategory("Network Interface").GetInstanceNames();
+                    if (names.Length > 0)
+                        net = new System.Diagnostics.PerformanceCounter("Network Interface", "Bytes Total/sec", names[0]);
+                }
+                catch { }
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { _pCpu = cpu; _pNet = net; });
+            }
+            catch { }
+        });
+    }
+
+    private void TickPerf()
+    {
+        if (Environment.TickCount64 - _lastPerfTick < 2000) return; // 2 秒节流
+        _lastPerfTick = Environment.TickCount64;
+        try
+        {
+            if (_pCpu != null) _big.Text = $"CPU  {_pCpu.NextValue():F0}%";
+            var mem = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+            var memPart = GlobalMemoryStatusEx(ref mem) ? $"内存 {mem.dwMemoryLoad}%" : "内存 --";
+            var netPart = "网速 --";
+            if (_pNet != null)
+            {
+                var b = (long)_pNet.NextValue();
+                var d = Math.Max(0, b - _pLastBytes);
+                _pLastBytes = b;
+                netPart = d switch
+                {
+                    >= 1024 * 1024 => $"网速 {d / 1024.0 / 1024:0.##} MB/s",
+                    >= 1024 => $"网速 {d / 1024.0:0.#} KB/s",
+                    _ => $"网速 {d} B/s",
+                };
+            }
+            _sub.Text = $"{memPart} · {netPart}";
+        }
+        catch { }
+    }
+
+    /// <summary>某类小组件是否已开</summary>
+    public static bool HasOpen(Kind k) => _all.Any(w => w._kind == k);
+
+    private static Avalonia.Threading.DispatcherTimer? _autoSave;
+
+    /// <summary>每 10 秒自动保存会话（不依赖 Closed——进程退出/被杀也能恢复）</summary>
+    private static void EnsureAutoSave()
+    {
+        if (_autoSave != null) return;
+        _autoSave = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+        _autoSave.Tick += (_, _) => SaveSession();
+        _autoSave.Start();
     }
 
     private static void SetForegrounds(object? o, IBrush brush)
@@ -547,6 +596,7 @@ public partial class SimpleWidgetWindow : Window
                     var l = _pomoEnd - DateTime.Now;
                     _big.Text = l > TimeSpan.Zero ? $"{(int)l.TotalMinutes:00}:{l.Seconds:00}" : "完成";
                     break;
+                case Kind.Perf: TickPerf(); break;
             }
         }
         catch { }

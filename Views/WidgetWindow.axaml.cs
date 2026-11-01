@@ -17,34 +17,25 @@ public partial class WidgetWindow : Window
     /// <summary>当前实例（主窗口开关用）</summary>
     public static WidgetWindow? Instance;
 
-    /// <summary>应用完整材质（模糊/液态玻璃/字色反色），由 SimpleWidgetWindow.Material 广播</summary>
+    /// <summary>应用完整材质（云母/亚克力系统背景+反色），与小组件同源</summary>
     public void ApplyMaterial(SimpleWidgetWindow.MatInfo m)
     {
-        var blur = m.Mode != "solid";
-        // 窗口级亚克力模糊（与小组件同一 Win32 方案）
-        SimpleWidgetWindow.EnableBlurBehind(this, blur ? m.TintHex : null);
-
-        // DWM 圆角，消除系统模糊层方形感
-        if (OperatingSystem.IsWindows())
+        SimpleWidgetWindow.EnableBlurBehind(this, null); // 清 ACCENT 残留
+        try
         {
-            try
+            var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd != IntPtr.Zero)
             {
-                var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-                if (hwnd != IntPtr.Zero) { int pref = 2; _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4); }
+                var bd = m.Backdrop; // 1=云母 2=亚克力（与主界面同系统实现）
+                _ = DwmSetWindowAttribute(hwnd, 38, ref bd, 4);
+                int pref = 2;
+                _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
             }
-            catch { }
         }
+        catch { }
 
-        // 卡片底：液态玻璃=纯半透明暗色（靠系统模糊出材质，无静态渐变装饰），其余=纯色
-        Card.Background = m.Mode == "liquid"
-            ? Avalonia.Media.Brush.Parse("#70282830")
-            : Avalonia.Media.Brush.Parse(m.CardHex);
-
-        // 字色：液态玻璃强制白字（暗玻璃底），其余按材质亮度反色
-        var fg = m.Mode == "liquid" ? Brushes.White
-            : Convert.ToInt32(m.CardHex.Substring(1, 2), 16) +
-              Convert.ToInt32(m.CardHex.Substring(3, 2), 16) +
-              Convert.ToInt32(m.CardHex.Substring(5, 2), 16) < 330 ? Brushes.White : Brushes.Black;
+        Card.Background = Avalonia.Media.Brush.Parse(m.CardHex);
+        var fg = m.ForeBrush;
         SetFg(this);
         void SetFg(object? o)
         {

@@ -39,26 +39,20 @@ public partial class WidgetView : UserControl
     public WidgetView()
     {
         InitializeComponent();
-        foreach (var m in SimpleWidgetWindow.Materials)
+        // 材质：下拉菜单选择（云母/亚克力，与主界面同系统实现）
+        var matBox = new ComboBox { MinWidth = 150, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left };
+        foreach (var m in SimpleWidgetWindow.Materials) matBox.Items.Add(m.Name);
+        matBox.SelectedIndex = Math.Max(0, Array.IndexOf(SimpleWidgetWindow.Materials, SimpleWidgetWindow.Material));
+        matBox.SelectionChanged += (_, _) =>
         {
-            var modeTag = m.Mode == "acrylic" ? "亚克力" : m.Mode == "liquid" ? "液态玻璃" : "纯色";
-            var b = new Button
+            var idx = Math.Max(0, matBox.SelectedIndex);
+            if (idx < SimpleWidgetWindow.Materials.Length)
             {
-                Content = $"{m.Name} · {modeTag}", FontSize = 12,
-                Padding = new Avalonia.Thickness(10, 5),
-                CornerRadius = new Avalonia.CornerRadius(6),
-                Background = Brush.Parse(m.CardHex),
-                Foreground = m.ForeBrush,
-                Margin = new Avalonia.Thickness(0, 0, 8, 8),
-                Tag = m,
-            };
-            b.Click += (_, _) =>
-            {
-                SimpleWidgetWindow.Material = m; // 实时广播（含字色反色/系统模糊/圆角）
-                MainWindow.PushToast("材质", $"已切换：{m.Name}（{modeTag}）", 3);
-            };
-            MaterialPanel.Children.Add(b);
-        }
+                SimpleWidgetWindow.Material = SimpleWidgetWindow.Materials[idx];
+                MainWindow.PushToast("材质", $"已切换：{SimpleWidgetWindow.Materials[idx].Name}", 3);
+            }
+        };
+        MaterialPanel.Children.Add(matBox);
 
         foreach (var (icon, name, desc, key) in _widgets)
         {
@@ -104,7 +98,7 @@ public partial class WidgetView : UserControl
 
         Window w = key switch
         {
-            "perf" => OpenPerf(),
+            "perf" => New(SimpleWidgetWindow.Kind.Perf, "性能监控"),
             "clock" => New(SimpleWidgetWindow.Kind.Clock, "时钟"),
             "gaokao" => New(SimpleWidgetWindow.Kind.Countdown, "高考倒计时",
                 c => { var t = new DateTime(DateTime.Now.Year, 6, 7); if (DateTime.Now > t) t = t.AddYears(1); c.Target = t; }),
@@ -140,17 +134,6 @@ public partial class WidgetView : UserControl
         var w = new SimpleWidgetWindow(k, cfg);
         w.Show();
         return w;
-    }
-
-    private WidgetWindow OpenPerf()
-    {
-        // 以窗口实例为准（配置开关可能与实例不同步：如启动延迟未到、上次异常退出）
-        if (WidgetWindow.Instance == null)
-        {
-            ConfigManager.Instance.DesktopWidgetEnabled = true;
-            new WidgetWindow().Show();
-        }
-        return WidgetWindow.Instance!;
     }
 
     private SimpleWidgetWindow NewDiskWidget()
