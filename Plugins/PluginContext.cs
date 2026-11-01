@@ -1,6 +1,8 @@
 using Newtonsoft.Json;
 using SBtools.Models;
 using SBtools.Services;
+using SBtools.Views;
+using Avalonia.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -194,5 +196,45 @@ internal class PluginContext : IPluginContext
     public void SetConfigInt(string key, int value)
     {
         SetConfig(key, value.ToString());
+    }
+
+    // ============================================================
+    // UI 扩展
+    // ============================================================
+    private readonly List<string> _tabIds = new();
+
+    public void RegisterTab(string title, Func<Avalonia.Controls.Control> buildPage)
+    {
+        var tabId = PluginId;
+        _tabIds.Add(tabId);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            MainWindow.RegisterPluginTab(tabId, title, buildPage));
+    }
+
+    public void RegisterWidgetCard(string title, string description, string icon, Action onClick)
+        => WidgetView.RegisterPluginCard(PluginId, title, description, icon, onClick);
+
+    public void ShowWindow(string title, Avalonia.Controls.Control content)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            var w = new Window
+            {
+                Title = title,
+                Width = 480, Height = 380,
+                Content = new Avalonia.Controls.ScrollViewer { Content = content },
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            w.Show(MainWindow._instance);
+        });
+    }
+
+    /// <summary>卸载时移除本插件注册的全部 UI</summary>
+    internal void RemoveUi()
+    {
+        foreach (var id in _tabIds)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => MainWindow.RemovePluginTab(id));
+        _tabIds.Clear();
+        WidgetView.UnregisterPluginCards(PluginId);
     }
 }

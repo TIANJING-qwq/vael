@@ -98,6 +98,20 @@
                                            FontSize="11"
                                            Foreground="#FFC42B1C"
                                            TextWrapping="Wrap"/>
+
+                                <!-- ★ 启用/禁用按钮（核心内置不可禁用） -->
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                    <Button Content="禁用"
+                                            Padding="14,5"
+                                            FontSize="12"
+                                            IsVisible="{Binding ShowLoadedBadge}"
+                                            Click="Disable_Click"/>
+                                    <Button Content="启用"
+                                            Padding="14,5"
+                                            FontSize="12"
+                                            IsVisible="{Binding ShowFailedBadge}"
+                                            Click="Enable_Click"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

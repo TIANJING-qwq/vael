@@ -55,14 +55,21 @@ public partial class App : Application
                 // ★ 先播放开场动画（受「启动动画」开关控制）；主窗口就绪后立即结束动画
                 if (ConfigManager.Instance.StartupAnimationEnabled)
                 {
-                    try { SplashWindow.ShowSplash(); }
+                    try
+                    {
+                        SplashWindow.ShowSplash();
+                        SplashWindow.SetProgress(0.12, "初始化运行环境");
+                    }
                     catch (Exception ex) { LogService.Log($"开场动画启动失败: {ex.Message}", "启动"); }
                 }
 
+                SplashWindow.SetProgress(0.35, "载入桌面组件");
                 var window = new MainWindow(startMinimized);
+                SplashWindow.SetProgress(0.58, "构建主界面");
                 desktop.MainWindow = window;
                 window.Opened += async (_, _) =>
                 {
+                    SplashWindow.SetProgress(0.86, "连接插件与通知服务");
                     await SplashWindow.DismissAsync();
                     try { window.Activate(); } catch { }
                 };

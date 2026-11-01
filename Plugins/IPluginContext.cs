@@ -1,4 +1,5 @@
 using System;
+using Avalonia.Controls;
 
 namespace SBtools.Plugins;
 
@@ -63,4 +64,21 @@ public interface IPluginContext
 
     /// <summary>网络状态变化时触发。true=已连接</summary>
     event Action<bool>? NetworkStatusChanged;
+
+    // ============================================================
+    // UI 扩展（可在插件里创建界面）
+    // ============================================================
+    /// <summary>
+    /// 在主窗口侧边栏注册一个选项卡。buildPage 在每次进入该页时调用，
+    /// 返回任意 Avalonia Control（插件工程需引用 Avalonia 11.3）。
+    /// </summary>
+    void RegisterTab(string title, Func<Control> buildPage);
+
+    /// <summary>
+    /// 在「小组件」页注册一张卡片。icon 为 Segoe Fluent Icons 字形（可空）。
+    /// </summary>
+    void RegisterWidgetCard(string title, string description, string icon, Action onClick);
+
+    /// <summary>弹出一个独立窗口承载任意内容（置顶、可拖动标题栏）</summary>
+    void ShowWindow(string title, Control content);
 }

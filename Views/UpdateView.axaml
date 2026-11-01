@@ -39,6 +39,15 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.6" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; 插件系统全面开放：可创建侧边栏选项卡、注册小组件卡片、弹独立窗口&#10;&#8226; 插件页一键启用/禁用（立即生效并持久化，UI 同步增删）&#10;&#8226; 内置示例插件演示全部 API；插件文档 2.0 重写&#10;&#8226; 全新开屏动画"
+                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
                             <TextBlock Text="v0.5.5" FontSize="15" FontWeight="SemiBold" />
                             <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
                         </StackPanel>

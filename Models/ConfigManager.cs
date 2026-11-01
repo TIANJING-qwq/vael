@@ -125,6 +125,13 @@ public class ConfigManager
         set { _data.WidgetSession = value; Save(); }
     }
 
+    /// <summary>已禁用的插件 ID 列表（JSON 数组字符串）</summary>
+    public string DisabledPlugins
+    {
+        get => _data.DisabledPlugins;
+        set { _data.DisabledPlugins = value; Save(); }
+    }
+
     internal static System.Collections.Generic.HashSet<System.DayOfWeek> MaskToDays(int mask)
     {
         var set = new System.Collections.Generic.HashSet<System.DayOfWeek>();
@@ -463,6 +470,7 @@ public class ConfigManager
         public int ScheduleDays { get; set; } = 0; // 位掩码 bit0=周日..bit6=周六；0=每天
         public bool DesktopWidgetEnabled { get; set; } = false;
         public string WidgetSession { get; set; } = "";
+        public string DisabledPlugins { get; set; } = "";
         public string ScheduleChannel { get; set; } = "CCTV-13 新闻";
 
         // ★ 播放器：上次频道 / 每个频道首选源

@@ -36,6 +36,18 @@ public partial class WidgetView : UserControl
     private readonly Dictionary<string, Window> _open = new();
     private System.Timers.Timer? _restTimer;
 
+    // ===== 插件注册的卡片（静态注册表，页面每次重建都重新挂载） =====
+    private static readonly List<(string PluginId, string Title, string Desc, string Icon, Action Click)> _pluginCards = new();
+
+    public static void RegisterPluginCard(string pluginId, string title, string desc, string icon, Action onClick)
+        => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _pluginCards.Add((pluginId, title, desc, icon, onClick));
+        });
+
+    public static void UnregisterPluginCards(string pluginId)
+        => _pluginCards.RemoveAll(c => c.PluginId == pluginId);
+
     public WidgetView()
     {
         InitializeComponent();
@@ -99,6 +111,34 @@ public partial class WidgetView : UserControl
             };
             b.Click += Widget_Click;
             WidgetGrid.Children.Add(b);
+        }
+
+        // 插件卡片
+        foreach (var (pid, ptitle, pdesc, picon, pclick) in _pluginCards)
+        {
+            var pb = new Button
+            {
+                Width = 165, Height = 92,
+                Margin = new Avalonia.Thickness(0, 0, 10, 10),
+                Padding = new Avalonia.Thickness(0),
+                CornerRadius = new Avalonia.CornerRadius(10),
+                Tag = pclick,
+                Content = new StackPanel
+                {
+                    Spacing = 4,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                    Children =
+                    {
+                        new TextBlock { Text = string.IsNullOrEmpty(picon) ? "插" : picon, FontSize = 26, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Opacity = 0.9,
+                                        FontFamily = new Avalonia.Media.FontFamily("Segoe Fluent Icons,Segoe MDL2 Assets") },
+                        new TextBlock { Text = ptitle, FontSize = 13, FontWeight = Avalonia.Media.FontWeight.SemiBold, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                        new TextBlock { Text = pdesc, FontSize = 10, Opacity = 0.55, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                    },
+                },
+            };
+            pb.Click += (_, _) => { try { pclick(); } catch { } };
+            WidgetGrid.Children.Add(pb);
         }
     }
 

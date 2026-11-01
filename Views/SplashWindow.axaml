@@ -1,98 +1,281 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="SBtools.Views.SplashWindow"
-        Title=""
-        Width="440" Height="440"
-        CanResize="False"
+        Title="Vael"
+        Width="920" Height="640"
+        MinWidth="640" MinHeight="450"
+        CanResize="True"
         ShowInTaskbar="False"
         SystemDecorations="None"
         Topmost="True"
         WindowStartupLocation="CenterScreen"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
-        TransparencyBackgroundFallback="#00000000">
+        TransparencyBackgroundFallback="#FF050D1A"
+        FontFamily="Inter, Microsoft YaHei UI, Noto Sans SC">
 
-    <!-- 深色卡片：克制、留白 -->
     <Border x:Name="Root"
             CornerRadius="20"
             BorderThickness="1"
-            BorderBrush="#14FFFFFF"
-            ClipToBounds="True">
+            BorderBrush="#1AFFFFFF"
+            ClipToBounds="True"
+            Opacity="0">
         <Border.Background>
-            <SolidColorBrush Color="#FF0B0D11"/>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#0A1E3C"/>
+                <GradientStop Offset="0.48" Color="#07152B"/>
+                <GradientStop Offset="1" Color="#030A15"/>
+            </LinearGradientBrush>
         </Border.Background>
 
-        <Grid>
-            <!-- 图标舞台 -->
-            <Grid Width="160" Height="160"
-                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                  Margin="0,-58,0,0">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="920" Height="640">
 
-                <!-- 柔光 -->
-                <Ellipse x:Name="Glow" Width="150" Height="150"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Opacity="0">
-                    <Ellipse.Fill>
+                <!-- 电源点亮横线 -->
+                <Border x:Name="PowerLine"
+                        Canvas.Left="150" Canvas.Top="170"
+                        Width="0" Height="1" Opacity="0"
+                        Background="#DCEFFF"
+                        BoxShadow="0 0 24 5 #805B9BFF"/>
+
+                <!-- 中心柔光 -->
+                <Border x:Name="Glow"
+                        Canvas.Left="220" Canvas.Top="-70"
+                        Width="480" Height="480"
+                        CornerRadius="240"
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        RenderTransformOrigin="50%,50%">
+                    <Border.Background>
                         <RadialGradientBrush>
-                            <GradientStop Offset="0" Color="#265B9BFF"/>
-                            <GradientStop Offset="0.55" Color="#0F5B9BFF"/>
-                            <GradientStop Offset="1" Color="#005B9BFF"/>
+                            <GradientStop Offset="0" Color="#4A5B9BFF"/>
+                            <GradientStop Offset="0.4" Color="#1C4D8DFF"/>
+                            <GradientStop Offset="1" Color="#00000000"/>
                         </RadialGradientBrush>
-                    </Ellipse.Fill>
-                </Ellipse>
+                    </Border.Background>
+                </Border>
 
-                <!-- 细环：一次性「画圆」连接隐喻 -->
-                <Ellipse x:Name="Sweep" Width="124" Height="124"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Stroke="#5B9BFF" StrokeThickness="1"
-                         StrokeDashArray="389.557,389.557"
-                         StrokeDashOffset="389.557"
-                         Opacity="0"/>
+                <!-- 环形描边：连接 / 循环 -->
+                <Ellipse x:Name="Sweep"
+                         Canvas.Left="305" Canvas.Top="25"
+                         Width="310" Height="310"
+                         Stroke="#8FC8FF" StrokeThickness="1"
+                         StrokeDashArray="973.893,973.893"
+                         StrokeDashOffset="973.893"
+                         Opacity="0"
+                         IsHitTestVisible="False"/>
 
-                <!-- 应用图标 -->
-                <Image x:Name="AppIcon" Source="/Assets/app.png"
-                       Width="88" Height="88"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Opacity="0"/>
-            </Grid>
+                <!-- 图标舞台 -->
+                <Grid x:Name="IconStage"
+                      Canvas.Left="330" Canvas.Top="50"
+                      Width="260" Height="260"
+                      Opacity="0"
+                      RenderTransformOrigin="50%,50%">
 
-            <!-- 词标 -->
-            <TextBlock x:Name="Wordmark"
-                       Text="Vael"
-                       FontSize="40"
-                       FontWeight="SemiBold"
-                       LetterSpacing="4"
-                       Foreground="#F5F7FA"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="0,58,0,0"
-                       Opacity="0"/>
+                    <!-- 阴影放在裁切层外，避免出现方形边 -->
+                    <Border Width="260" Height="260"
+                            CornerRadius="60"
+                            Background="Transparent"
+                            BoxShadow="0 34 70 0 #99000000"/>
 
-            <!-- 细线 -->
-            <Border x:Name="Hairline" Width="120" Height="1"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Margin="0,124,0,0"
-                    Opacity="0">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                        <GradientStop Offset="0" Color="#005B9BFF"/>
-                        <GradientStop Offset="0.5" Color="#8C5B9BFF"/>
-                        <GradientStop Offset="1" Color="#005B9BFF"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
+                    <!-- 自下而上的光带揭开 -->
+                    <Border x:Name="IconReveal"
+                            Width="260" Height="0"
+                            VerticalAlignment="Bottom"
+                            ClipToBounds="True">
+                        <Border Width="260" Height="260"
+                                CornerRadius="60"
+                                ClipToBounds="True">
+                            <Image Source="/Assets/app.png"
+                                   Stretch="UniformToFill"/>
+                        </Border>
+                    </Border>
 
-            <!-- 副标题 -->
-            <TextBlock x:Name="Tagline"
-                       Text="校园网自动认证 · 轻量校园工具集"
-                       FontSize="12"
-                       LetterSpacing="1"
-                       Foreground="#7E8897"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Margin="0,142,0,0"
-                       Opacity="0"/>
-        </Grid>
+                    <Canvas Width="260" Height="260">
+                        <Border x:Name="WipeLine"
+                                Canvas.Left="0" Canvas.Top="260"
+                                Width="260" Height="2"
+                                Opacity="0"
+                                Background="#FFFFFF"
+                                BoxShadow="0 0 26 6 #A05B9BFF"/>
+                    </Canvas>
+                </Grid>
+
+                <!-- 词标 -->
+                <TextBlock x:Name="Wordmark"
+                           Canvas.Left="0" Canvas.Top="320"
+                           Width="920"
+                           Text="Vael"
+                           TextAlignment="Center"
+                           FontSize="50"
+                           FontWeight="SemiBold"
+                           LetterSpacing="1"
+                           Foreground="#F6FBFF"
+                           Opacity="0"
+                           RenderTransformOrigin="50%,50%"/>
+
+                <!-- 副标题 -->
+                <TextBlock x:Name="Tagline"
+                           Canvas.Left="0" Canvas.Top="388"
+                           Width="920"
+                           Text="全能桌面工具箱 · 全平台"
+                           TextAlignment="Center"
+                           FontSize="14"
+                           LetterSpacing="2.6"
+                           Foreground="#A8C6E6"
+                           Opacity="0"/>
+
+                <!-- 状态 -->
+                <Grid x:Name="StatusGroup"
+                      Canvas.Left="0" Canvas.Top="424"
+                      Width="920" Height="28"
+                      Opacity="0">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <Ellipse x:Name="StatusDot"
+                                 Width="6" Height="6"
+                                 Fill="#7BE2FF"
+                                 VerticalAlignment="Center"/>
+                        <TextBlock x:Name="StatusText"
+                                   Text="正在初始化运行环境"
+                                   FontSize="14"
+                                   LetterSpacing="0.8"
+                                   Foreground="#C4E0FF"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 进度 -->
+                <Grid x:Name="BarGroup"
+                      Canvas.Left="230" Canvas.Top="456"
+                      Width="500" Height="30"
+                      Opacity="0">
+                    <Border x:Name="BarTrack"
+                            Width="440" Height="3"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            CornerRadius="2"
+                            Background="#22FFFFFF"/>
+                    <Border x:Name="BarFill"
+                            Width="0" Height="3"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            CornerRadius="2"
+                            Background="#8FE6FF"
+                            BoxShadow="0 0 12 2 #805B9BFF"/>
+                    <TextBlock x:Name="Pct"
+                               Width="56"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               Text="0%"
+                               TextAlignment="Right"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Foreground="#D9F1FF"/>
+                </Grid>
+
+                <!-- 模块 chip -->
+                <Grid x:Name="ChipsGroup"
+                      Canvas.Left="0" Canvas.Top="496"
+                      Width="920" Height="36"
+                      Opacity="0">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="14">
+
+                        <Border x:Name="Chip0" Width="116" Height="32" CornerRadius="8"
+                                Background="#12FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1"
+                                RenderTransformOrigin="50%,50%">
+                            <Grid Margin="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="Chip0Dot" Width="6" Height="6" Fill="#556B8FB3" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Chip0Label" Grid.Column="1" Text="WIDGETS"
+                                           Margin="7,0,0,0" VerticalAlignment="Center"
+                                           FontSize="9.5" LetterSpacing="1.1" Foreground="#66A0C8E8"/>
+                                <TextBlock x:Name="Chip0Value" Grid.Column="2" Text="16"
+                                           VerticalAlignment="Center"
+                                           FontSize="10.5" FontWeight="SemiBold" Foreground="#8899BBDD"/>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="Chip1" Width="116" Height="32" CornerRadius="8"
+                                Background="#12FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1"
+                                RenderTransformOrigin="50%,50%">
+                            <Grid Margin="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="Chip1Dot" Width="6" Height="6" Fill="#556B8FB3" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Chip1Label" Grid.Column="1" Text="SYSTEM"
+                                           Margin="7,0,0,0" VerticalAlignment="Center"
+                                           FontSize="9.5" LetterSpacing="1.1" Foreground="#66A0C8E8"/>
+                                <TextBlock x:Name="Chip1Value" Grid.Column="2" Text="229"
+                                           VerticalAlignment="Center"
+                                           FontSize="10.5" FontWeight="SemiBold" Foreground="#8899BBDD"/>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="Chip2" Width="116" Height="32" CornerRadius="8"
+                                Background="#12FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1"
+                                RenderTransformOrigin="50%,50%">
+                            <Grid Margin="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="Chip2Dot" Width="6" Height="6" Fill="#556B8FB3" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Chip2Label" Grid.Column="1" Text="PLUGINS"
+                                           Margin="7,0,0,0" VerticalAlignment="Center"
+                                           FontSize="9.5" LetterSpacing="1.1" Foreground="#66A0C8E8"/>
+                                <TextBlock x:Name="Chip2Value" Grid.Column="2" Text="12"
+                                           VerticalAlignment="Center"
+                                           FontSize="10.5" FontWeight="SemiBold" Foreground="#8899BBDD"/>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="Chip3" Width="116" Height="32" CornerRadius="8"
+                                Background="#12FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1"
+                                RenderTransformOrigin="50%,50%">
+                            <Grid Margin="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="Chip3Dot" Width="6" Height="6" Fill="#556B8FB3" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Chip3Label" Grid.Column="1" Text="NOTIFY"
+                                           Margin="7,0,0,0" VerticalAlignment="Center"
+                                           FontSize="9.5" LetterSpacing="1.1" Foreground="#66A0C8E8"/>
+                                <TextBlock x:Name="Chip3Value" Grid.Column="2" Text="3"
+                                           VerticalAlignment="Center"
+                                           FontSize="10.5" FontWeight="SemiBold" Foreground="#8899BBDD"/>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </Grid>
+
+                <!-- 底部元信息 -->
+                <TextBlock x:Name="Meta"
+                           Canvas.Left="0" Canvas.Top="574"
+                           Width="920"
+                           Text="VAEL 1.2.0 · CROSS-PLATFORM · .NET 8"
+                           TextAlignment="Center"
+                           FontSize="10"
+                           LetterSpacing="2"
+                           Foreground="#8AA6C2"
+                           Opacity="0"/>
+            </Canvas>
+        </Viewbox>
     </Border>
 </Window>

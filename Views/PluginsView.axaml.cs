@@ -86,4 +86,22 @@ public partial class PluginsView : UserControl
             MainWindow.PushToast("插件重载失败", ex.Message);
         }
     }
+
+    /// <summary>一键禁用：立即卸载（含选项卡/小组件卡片）并持久化</summary>
+    private void Disable_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not PluginInfo p || string.IsNullOrEmpty(p.Id)) return;
+        PluginManager.Instance.SetEnabled(p.Id, false);
+        Refresh();
+        MainWindow.PushToast("插件", $"{p.Name} 已禁用（选项卡与卡片已移除）", 4);
+    }
+
+    /// <summary>一键启用：立即激活并持久化</summary>
+    private void Enable_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not PluginInfo p || string.IsNullOrEmpty(p.Id)) return;
+        PluginManager.Instance.SetEnabled(p.Id, true);
+        Refresh();
+        MainWindow.PushToast("插件", $"{p.Name} 已启用", 4);
+    }
 }

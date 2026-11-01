@@ -15,6 +15,7 @@ using SBtools.Models;
 using SBtools.Services;
 using SBtools.Views;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ namespace SBtools;
 
 public partial class MainWindow : Window
 {
-    private static MainWindow? _instance;
+    internal static MainWindow? _instance;
     private static PlaybackScheduler? _scheduler;
     private TrayIcon? _trayIcon;
 
@@ -230,7 +231,8 @@ public partial class MainWindow : Window
     {
         if (e.SelectedItem is NavigationViewItem item)
         {
-            switch (item.Tag?.ToString())
+            var tag = item.Tag?.ToString() ?? "";
+            switch (tag)
             {
                 case "features":     ContentFrame.Navigate(typeof(FeaturesView));     break;
                 case "network":      ContentFrame.Navigate(typeof(NetworkView));      break;
@@ -247,10 +249,44 @@ public partial class MainWindow : Window
                     (ContentFrame.Content as SettingsView)?.OnEnter();
                     break;
                 case "about":        ContentFrame.Navigate(typeof(AboutView));        break;
+                default:
+                    // ★ 插件注册的选项卡：tag = plugin:{id}
+                    if (tag.StartsWith("plugin:", StringComparison.Ordinal) &&
+                        _pluginPages.TryGetValue(tag, out var page))
+                        ContentFrame.Content = page(); // 插件页实例直接承载
+                    break;
             }
 
             AnimateContentIn();
         }
+    }
+
+    // ============================================================
+    // 插件选项卡注册
+    // ============================================================
+    private static readonly Dictionary<string, Func<Avalonia.Controls.Control>> _pluginPages = new();
+
+    /// <summary>插件注册侧边栏选项卡（追加到导航末尾）</summary>
+    public static void RegisterPluginTab(string pluginId, string title, Func<Avalonia.Controls.Control> buildPage)
+    {
+        var tag = "plugin:" + pluginId;
+        _pluginPages[tag] = buildPage;
+        var inst = _instance;
+        if (inst == null) return;
+        var item = new NavigationViewItem { Content = title, Tag = tag };
+        inst.NavView.MenuItems.Add(item);
+    }
+
+    /// <summary>移除插件选项卡</summary>
+    public static void RemovePluginTab(string pluginId)
+    {
+        var tag = "plugin:" + pluginId;
+        _pluginPages.Remove(tag);
+        var inst = _instance;
+        if (inst == null) return;
+        var item = inst.NavView.MenuItems.OfType<NavigationViewItem>()
+            .FirstOrDefault(i => i.Tag?.ToString() == tag);
+        if (item != null) inst.NavView.MenuItems.Remove(item);
     }
 
     /// <summary>全局页面进入动画：淡入 + 上浮</summary>

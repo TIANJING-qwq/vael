@@ -2,116 +2,170 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
-using Avalonia.Media.Transformation;
+using Avalonia.Controls.Shapes;
+using Avalonia.Media;
 using Avalonia.Threading;
 using System;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace SBtools.Views;
 
 /// <summary>
-/// 开场动画（Splash）——「画一个圆」的克制表达。
-///
-/// 以高级动效的眼光做减法：去掉雷达弧、波纹、粒子、进度条等喧闹元素，
-/// 只保留三件事——图标轻轻落定、一道细环画满一圈（连接建立）、词标与一条细线浮现。
-/// 全程单一强调色、柔和留白、BackEaseOut 的干脆收束。
+/// 实时计算的开屏动画（无视频、无预渲染帧）。
+/// 所有几何、透明度、进度都由 DispatcherTimer + Stopwatch 在每一帧计算；
+/// 根节点放在 Viewbox 中，因此窗口尺寸变化时会整体等比适配。
+/// 启动进度由 App 在真实初始化节点调用 SetProgress 推进，未上报时自动缓慢前进。
 /// </summary>
 public partial class SplashWindow : Window
 {
-    // ============ 可调参数 ============
-    /// <summary>动画最低展示时长（毫秒）。设为 0 即严格「就绪立刻终止」。</summary>
-    private const double MinDisplayMs = 900;
-    /// <summary>交接淡出时长（毫秒）。</summary>
-    private const double DismissMs = 220;
-    /// <summary>细环扫描一帧的步长。</summary>
-    private const double TickMs = 16;
+    private const double MinDisplayMs = 1500;
+    private const double ReadyHoldMs = 380;
+    private const double DismissMs = 260;
+    private const double SweepCircumference = Math.PI * 310.0;
 
     private static SplashWindow? _instance;
-    private static CancellationTokenSource _cts = new();
-    private static DateTime _shownAt;
-    private static bool _dismissed;
     private static bool _testPlaying;
 
-    private readonly double _sweepCirc = Math.PI * 124.0; // 细环周长 ≈ 389.557
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(15) };
+    private readonly Stopwatch _clock = new();
 
-    private DispatcherTimer? _tick;
-    private double _sweepProgress;
+    private readonly Border[] _chips;
+    private readonly Ellipse[] _dots;
+    private readonly TextBlock[] _labels;
+    private readonly TextBlock[] _values;
+    private readonly double[] _chipAt = { -1, -1, -1, -1 };
+    private readonly bool[] _chipOn = new bool[4];
+
+    private double _progress;
+    private double _targetProgress;
+    private string? _statusOverride;
+    private bool _dismissing;
+    private bool _fading;
+    private bool _readyVisual;
+    private double _readyAt;
+
+    // ---------- 预置画刷 ----------
+    private static readonly IBrush ChipBgOff = new SolidColorBrush(Color.Parse("#12FFFFFF"));
+    private static readonly IBrush ChipBorderOff = new SolidColorBrush(Color.Parse("#1FFFFFFF"));
+    private static readonly IBrush ChipDotOff = new SolidColorBrush(Color.Parse("#556B8FB3"));
+    private static readonly IBrush ChipLabelOff = new SolidColorBrush(Color.Parse("#66A0C8E8"));
+    private static readonly IBrush ChipValueOff = new SolidColorBrush(Color.Parse("#8899BBDD"));
+
+    private static readonly IBrush ChipBgOn = new SolidColorBrush(Color.Parse("#0F7DF0C4"));
+    private static readonly IBrush ChipBorderOn = new SolidColorBrush(Color.Parse("#3D7DF0C4"));
+    private static readonly IBrush ChipDotOn = new SolidColorBrush(Color.Parse("#FF7DF0C4"));
+    private static readonly IBrush ChipLabelOn = new SolidColorBrush(Color.Parse("#CFEFFF"));
+    private static readonly IBrush ChipValueOn = new SolidColorBrush(Color.Parse("#B9FFE4"));
+
+    private static readonly IBrush ReadyText = new SolidColorBrush(Color.Parse("#B9FFE4"));
+    private static readonly IBrush BarOff = MakeGradient(("#4C8CFF", 0.0), ("#8FE6FF", 0.72), ("#EAFBFF", 1.0));
+    private static readonly IBrush BarReady = MakeGradient(("#4DD9B0", 0.0), ("#7DF0C4", 0.55), ("#D9FFF2", 1.0));
 
     public SplashWindow()
     {
         InitializeComponent();
 
-        // —— 过渡 ——
-        Root.Opacity = 0;
-        Root.Transitions = new Transitions
-        {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(520), Easing = new ExponentialEaseOut() }
-        };
+        _chips = new[] { Chip0, Chip1, Chip2, Chip3 };
+        _dots = new[] { Chip0Dot, Chip1Dot, Chip2Dot, Chip3Dot };
+        _labels = new[] { Chip0Label, Chip1Label, Chip2Label, Chip3Label };
+        _values = new[] { Chip0Value, Chip1Value, Chip2Value, Chip3Value };
 
-        Glow.Transitions = FadeTransitions(900);
+        for (int i = 0; i < _chips.Length; i++) ApplyChip(i, false);
 
-        SetupFadeScale(AppIcon, "scale(0.94)", 520, 700);
-
-        Sweep.Opacity = 0;
-        Sweep.Transitions = FadeTransitions(320);
-
-        SetupRise(Wordmark, "translateY(10px)", 600, 700);
-        SetupFadeScale(Hairline, "scale(0,1)", 320, 620);
-        SetupRise(Tagline, "translateY(6px)", 500, 600);
+        _timer.Tick += OnTick;
 
         Opened += (_, _) =>
         {
-            if (_dismissed) return;
-            _ = StartSequenceAsync();
+            _clock.Restart();
+            _timer.Start();
+        };
+
+        Closed += (_, _) =>
+        {
+            try { _timer.Stop(); } catch { }
         };
     }
 
     // ============================================================
-    // 对外 API
+    // 对外 API（保持原调用方式）
     // ============================================================
     public static void ShowSplash()
     {
-        _cts = new CancellationTokenSource();
-        _dismissed = false;
-        _shownAt = DateTime.UtcNow;
+        try { _instance?.Close(); } catch { }
+        _instance = null;
+
         var w = new SplashWindow();
         _instance = w;
         w.Show();
     }
 
-    /// <summary>主程序就绪后调用：立即结束并快速交接淡出。</summary>
+    /// <summary>
+    /// 由 App 在真实初始化节点调用。value 0..1；status 为空时使用内置阶段文案。
+    /// 动画本身仍会按真实时间继续推进，不会因为某一步没有上报而卡死。
+    /// </summary>
+    public static void SetProgress(double value, string? status = null)
+    {
+        var inst = _instance;
+        if (inst == null) return;
+
+        void Apply()
+        {
+            inst._targetProgress = Math.Clamp(value, 0, 1);
+            if (!string.IsNullOrWhiteSpace(status)) inst._statusOverride = status;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess()) Apply();
+        else Dispatcher.UIThread.Post(Apply);
+    }
+
+    /// <summary>主窗口就绪后调用：补到 100%，短暂停留 READY，再淡出关闭。</summary>
     public static async Task DismissAsync()
     {
         var inst = _instance;
-        _instance = null;
-        if (inst == null) return;
+        if (inst == null || inst._dismissing) return;
 
-        _dismissed = true;
-        _cts.Cancel();
+        inst._dismissing = true;
+        inst._targetProgress = 1;
 
         try
         {
-            var elapsed = (DateTime.UtcNow - _shownAt).TotalMilliseconds;
-            var wait = MinDisplayMs - elapsed;
-            if (wait > 0) await Task.Delay((int)wait);
+            var elapsed = inst._clock.Elapsed.TotalMilliseconds;
+            if (elapsed < MinDisplayMs)
+                await Task.Delay((int)(MinDisplayMs - elapsed));
 
-            try { inst._tick?.Stop(); } catch { }
+            // 等待平滑进度真正到达 100%（最多约 3 秒）
+            for (int i = 0; i < 150 && inst._progress < 0.995; i++)
+                await Task.Delay(20);
+
+            await Task.Delay((int)ReadyHoldMs);
+
+            inst._fading = true;
+            inst._timer.Stop();
 
             inst.Root.Transitions = new Transitions
             {
-                new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(DismissMs), Easing = new ExponentialEaseOut() }
+                new DoubleTransition
+                {
+                    Property = Visual.OpacityProperty,
+                    Duration = TimeSpan.FromMilliseconds(DismissMs),
+                    Easing = new ExponentialEaseOut()
+                }
             };
             inst.Root.Opacity = 0;
+
             await Task.Delay((int)DismissMs + 40);
         }
         catch { }
-
-        try { inst._tick?.Stop(); } catch { }
-        try { inst.Close(); } catch { }
+        finally
+        {
+            try { inst._timer.Stop(); } catch { }
+            try { inst.Close(); } catch { }
+            if (ReferenceEquals(_instance, inst)) _instance = null;
+        }
     }
 
-    /// <summary>实验室「测试动画」：独立播放完整动画后自动结束。</summary>
+    /// <summary>实验室「测试动画」：按完整时间轴播放一遍。</summary>
     public static async Task PlayTestAsync()
     {
         if (_testPlaying) return;
@@ -120,14 +174,15 @@ public partial class SplashWindow : Window
         {
             await DismissAsync();
 
-            _cts = new CancellationTokenSource();
-            _dismissed = false;
-            _shownAt = DateTime.UtcNow;
-            var w = new SplashWindow();
-            _instance = w;
-            w.Show();
+            ShowSplash();
+            await Task.Delay(1300);
+            SetProgress(0.42, "载入桌面组件");
+            await Task.Delay(900);
+            SetProgress(0.68, "检查系统优化项");
+            await Task.Delay(800);
+            SetProgress(0.90, "连接插件与通知服务");
+            await Task.Delay(500);
 
-            await Task.Delay(2600);
             await DismissAsync();
         }
         finally
@@ -137,102 +192,154 @@ public partial class SplashWindow : Window
     }
 
     // ============================================================
-    // 动画时间轴
+    // 每帧计算
     // ============================================================
-    private async Task StartSequenceAsync()
-    {
-        var ct = _cts.Token;
-        try
-        {
-            // 卡片浮现
-            Root.Opacity = 1;
-            await Task.Delay(130, ct);
-
-            // 柔光 + 图标轻轻落定
-            Glow.Opacity = 1;
-            await Task.Delay(60, ct);
-            AppIcon.Opacity = 1;
-            AppIcon.RenderTransform = TransformOperations.Parse("scale(1.0)");
-
-            // 细环画满一圈（连接建立），背景推进
-            Sweep.Opacity = 0.55;
-            StartSweep();
-            await Task.Delay(880, ct);
-
-            // 词标浮现
-            Wordmark.Opacity = 1;
-            Wordmark.RenderTransform = TransformOperations.Parse("translateY(0px)");
-            await Task.Delay(240, ct);
-
-            // 细线自中心展开
-            Hairline.Opacity = 1;
-            Hairline.RenderTransform = TransformOperations.Parse("scale(1,1)");
-            await Task.Delay(220, ct);
-
-            // 副标题
-            Tagline.Opacity = 0.75;
-            Tagline.RenderTransform = TransformOperations.Parse("translateY(0px)");
-
-            // 结束：保持至主界面就绪后由 DismissAsync 收尾
-        }
-        catch (OperationCanceledException) { }
-        catch { }
-    }
-
-    private void StartSweep()
-    {
-        _sweepProgress = 0;
-        Sweep.StrokeDashOffset = _sweepCirc;
-        _tick = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(TickMs) };
-        _tick.Tick += OnTick;
-        _tick.Start();
-    }
-
     private void OnTick(object? sender, EventArgs e)
     {
-        _sweepProgress += TickMs / 1300.0;
-        if (_sweepProgress > 1.0) _sweepProgress = 1.0;
+        if (_fading) return;
 
-        // smoothstep（缓入缓出），让画圆更沉稳
-        double p = _sweepProgress;
-        double eased = p * p * (3.0 - 2.0 * p);
-        Sweep.StrokeDashOffset = _sweepCirc * (1.0 - eased);
+        double t = _clock.Elapsed.TotalSeconds;
 
-        if (_sweepProgress >= 1.0)
+        // 根节点淡入
+        Root.Opacity = EaseOut(Seg(t, 0.0, 0.35));
+
+        // 电源横线
+        double pl = EaseOut(Seg(t, 0.02, 0.40));
+        double lineW = 620 * pl;
+        PowerLine.Width = lineW;
+        Canvas.SetLeft(PowerLine, 460 - lineW / 2);
+        PowerLine.Opacity = pl > 0 && pl < 1 ? Math.Sin(pl * Math.PI) * 0.9 : 0;
+
+        // 中心柔光
+        double gp = EaseOut(Seg(t, 0.18, 0.85));
+        Glow.Opacity = gp * 0.92;
+        Glow.RenderTransform = new ScaleTransform(0.90 + 0.10 * gp, 0.90 + 0.10 * gp);
+
+        // 环形描边
+        double sp = EaseInOut(Seg(t, 0.15, 1.15));
+        Sweep.StrokeDashOffset = SweepCircumference * (1 - sp);
+        Sweep.Opacity = sp > 0 && sp < 1 ? 0.60 : 0;
+
+        // 图标自下而上揭开
+        double wp = EaseInOut(Seg(t, 0.50, 1.08));
+        IconStage.Opacity = EaseOut(Seg(t, 0.45, 0.75));
+        IconReveal.Height = 260 * wp;
+        Canvas.SetTop(WipeLine, 260 * (1 - wp));
+        WipeLine.Opacity = wp > 0 && wp < 1 ? Math.Sin(wp * Math.PI) * 0.95 : 0;
+
+        double iconScale = 1.02 - 0.02 * wp;
+        IconStage.RenderTransform = new ScaleTransform(iconScale, iconScale);
+
+        // 词标
+        double wm = EaseOutExpo(Seg(t, 0.95, 1.30));
+        Wordmark.Opacity = wm;
+        Wordmark.RenderTransform = new TranslateTransform(0, (1 - wm) * 18);
+        Wordmark.LetterSpacing = 6 - 5 * wm;
+
+        // 副标题
+        double tg = EaseOut(Seg(t, 1.10, 1.40));
+        Tagline.Opacity = tg;
+        Tagline.RenderTransform = new TranslateTransform(0, (1 - tg) * 10);
+
+        Meta.Opacity = EaseOut(Seg(t, 1.25, 1.55)) * 0.9;
+
+        // 进度：真实上报 + 时间兜底
+        double auto = 0.06 + 0.58 * (1 - Math.Exp(-t / 2.2));
+        double target = Math.Max(_targetProgress, auto);
+        if (_targetProgress >= 0.999) target = 1.0;
+
+        _progress += (target - _progress) * 0.09;
+        if (target >= 0.999 && _progress > 0.995) _progress = 1.0;
+        _progress = Math.Clamp(_progress, 0, 1);
+
+        double pIn = EaseOut(Seg(t, 0.85, 1.10));
+        BarGroup.Opacity = pIn;
+        StatusGroup.Opacity = EaseOut(Seg(t, 0.90, 1.15));
+        ChipsGroup.Opacity = EaseOut(Seg(t, 0.95, 1.20));
+
+        BarFill.Width = 440 * _progress;
+        Pct.Text = $"{Math.Round(_progress * 100):0}%";
+
+        // 状态文案
+        string status;
+        if (_progress >= 0.995) status = "准备就绪";
+        else if (!string.IsNullOrEmpty(_statusOverride)) status = _statusOverride!;
+        else if (_progress < 0.30) status = "正在初始化运行环境";
+        else if (_progress < 0.62) status = "载入桌面小组件";
+        else if (_progress < 0.84) status = "检查系统优化项";
+        else status = "连接插件与通知服务";
+
+        if (StatusText.Text != status) StatusText.Text = status;
+
+        // 模块 chip
+        double[] thresholds = { 0.32, 0.62, 0.84, 0.995 };
+        for (int i = 0; i < _chips.Length; i++)
         {
-            Sweep.Opacity = 0;
-            try { _tick?.Stop(); } catch { }
+            if (!_chipOn[i] && _progress >= thresholds[i])
+            {
+                _chipOn[i] = true;
+                _chipAt[i] = t;
+                ApplyChip(i, true);
+            }
+
+            double age = _chipAt[i] >= 0 ? t - _chipAt[i] : 0;
+            double scale = _chipOn[i] ? 1 + 0.055 * Math.Exp(-age * 14) : 1;
+            _chips[i].RenderTransform = new ScaleTransform(scale, scale);
+        }
+
+        // READY 视觉
+        if (_progress >= 0.995)
+        {
+            if (!_readyVisual)
+            {
+                _readyVisual = true;
+                _readyAt = t;
+                BarFill.Background = BarReady;
+                Pct.Foreground = ReadyText;
+                StatusText.Foreground = ReadyText;
+                StatusDot.Fill = ReadyText;
+            }
+
+            Glow.Opacity = 0.90 + 0.05 * Math.Sin((t - _readyAt) * 5.5);
+        }
+        else
+        {
+            BarFill.Background = BarOff;
         }
     }
 
-    // ============================================================
-    // 过渡辅助
-    // ============================================================
-    private static Transitions FadeTransitions(double ms) => new()
+    private void ApplyChip(int i, bool on)
     {
-        new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(ms), Easing = new ExponentialEaseOut() }
-    };
-
-    private static void SetupFadeScale(Control c, string from, double fadeMs, double scaleMs)
-    {
-        c.Opacity = 0;
-        c.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
-        c.RenderTransform = TransformOperations.Parse(from);
-        c.Transitions = new Transitions
-        {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new ExponentialEaseOut() },
-            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(scaleMs), Easing = new BackEaseOut() }
-        };
+        _chips[i].Background = on ? ChipBgOn : ChipBgOff;
+        _chips[i].BorderBrush = on ? ChipBorderOn : ChipBorderOff;
+        _dots[i].Fill = on ? ChipDotOn : ChipDotOff;
+        _labels[i].Foreground = on ? ChipLabelOn : ChipLabelOff;
+        _values[i].Foreground = on ? ChipValueOn : ChipValueOff;
     }
 
-    private static void SetupRise(Control c, string from, double fadeMs, double riseMs)
+    // ============================================================
+    // 小工具
+    // ============================================================
+    private static double Seg(double t, double a, double b)
+        => Math.Clamp((t - a) / (b - a), 0, 1);
+
+    private static double EaseOut(double x) => 1 - Math.Pow(1 - x, 3);
+
+    private static double EaseInOut(double x)
+        => x < 0.5 ? 4 * x * x * x : 1 - Math.Pow(-2 * x + 2, 3) / 2;
+
+    private static double EaseOutExpo(double x)
+        => x >= 1 ? 1 : 1 - Math.Pow(2, -10 * x);
+
+    private static IBrush MakeGradient(params (string Color, double Offset)[] stops)
     {
-        c.Opacity = 0;
-        c.RenderTransform = TransformOperations.Parse(from);
-        c.Transitions = new Transitions
+        var brush = new LinearGradientBrush
         {
-            new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(fadeMs), Easing = new ExponentialEaseOut() },
-            new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(riseMs), Easing = new BackEaseOut() }
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative)
         };
+        foreach (var (color, offset) in stops)
+            brush.GradientStops.Add(new GradientStop(Color.Parse(color), offset));
+        return brush;
     }
 }
