@@ -105,11 +105,20 @@ public partial class SimpleWidgetWindow : Window
         var head = new Grid();
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var titleTb = new TextBlock { Text = cfg.Title, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(titleTb, 0);
         head.Children.Add(titleTb);
+        // 涩图：上一张小按钮
+        if (kind == Kind.Gallery)
+        {
+            var prev = new Button { Content = "‹", FontSize = 13, Padding = new Avalonia.Thickness(7, 1), Opacity = 0.7, CornerRadius = new Avalonia.CornerRadius(5) };
+            Grid.SetColumn(prev, 1);
+            prev.Click += (_, _) => Prev();
+            head.Children.Add(prev);
+        }
         var close = new Button { Content = "✕", FontSize = 10, Padding = new Avalonia.Thickness(5, 1), Opacity = 0.5 };
-        Grid.SetColumn(close, 1);
+        Grid.SetColumn(close, 2);
         close.Click += (_, _) => Close();
         head.Children.Add(close);
         head.PointerPressed += (_, e) => { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e); };
@@ -643,6 +652,36 @@ public partial class SimpleWidgetWindow : Window
         _pick = dt;
     }
 
+    /// <summary>抛硬币动画：硬币上抛（sin 轨径）+ 两圈旋转，落地定格</summary>
+    private void CoinFlip()
+    {
+        _pick?.Stop();
+        var final = _rnd.Next(2) == 0 ? "正面" : "反面";
+        _big.RenderTransformOrigin = new Avalonia.RelativePoint(0.5, 0.5, Avalonia.RelativeUnit.Relative);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        const int dur = 900;
+        var t = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        t.Tick += (_, _) =>
+        {
+            var ms = sw.ElapsedMilliseconds;
+            if (ms >= dur)
+            {
+                t.Stop();
+                _big.RenderTransform = TransformOperations.Parse("translate(0,0)");
+                _big.Text = final;
+                _sub.Text = "点击再抛";
+                return;
+            }
+            var p = ms / (double)dur;
+            var y = -46 * Math.Sin(Math.PI * p); // 上抛再落下
+            var rot = 720 * p;                    // 空中转两圈
+            _big.Text = (ms / 90) % 2 == 0 ? "正面" : "反面"; // 翻面闪烁
+            _big.RenderTransform = TransformOperations.Parse($"translate(0,{y:F1}) rotate({rot:F0})");
+        };
+        t.Start();
+        _pick = t;
+    }
+
     private void Action()
     {
         switch (_kind)
@@ -655,7 +694,7 @@ public partial class SimpleWidgetWindow : Window
                 break;
             }
             case Kind.Coin:
-                AnimatedPick(new[] { "正面", "反面" }, () => _rnd.Next(2) == 0 ? "正面" : "反面", "点击再抛");
+                CoinFlip();
                 break;
             case Kind.Roll:
             {
