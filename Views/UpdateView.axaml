@@ -39,6 +39,15 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.7" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程&#10;&#8226; 修复启动崩溃与示例插件页重复注册&#10;&#8226; 更新页徽章改为测试版"
+                                   FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
                             <TextBlock Text="v0.5.6" FontSize="15" FontWeight="SemiBold" />
                             <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
                         </StackPanel>
