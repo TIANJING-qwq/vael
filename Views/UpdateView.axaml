@@ -39,11 +39,19 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" />
-                            <TextBlock Text="v0.5.4" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Text="v0.5.5" FontSize="15" FontWeight="SemiBold" />
                             <TextBlock Text="Umi" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Text="&#8226; 小组件管理页：16 项自实现桌面小组件&#10;&#8226; 点击开启 / 再次点击关闭 / 右键详细配置&#10;&#8226; 8 种材质实时切换；计算器 / 电池 / 内存曲线全自写&#10;&#8226; 常见问题 115 条 · 优化大全 114 项"
+                        <TextBlock Text="&#8226; 小组件全面进化：统一窗体 + 会话记忆（位置/置顶/参数）&#10;&#8226; 抛硬币上抛旋转动画、点名/抽号老虎机减速动画&#10;&#8226; 开关窗非线性淡入淡出；涩图历史回退（中键/按钮）&#10;&#8226; 云母/亚克力材质与主界面同源，下拉实时切换&#10;&#8226; 内存 60 秒曲线 · 网速自动换单位 · 按键式计算器"
                                    FontSize="13" Opacity="0.75" Margin="18,0,0,0" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="#999999" VerticalAlignment="Center" />
+                            <TextBlock Text="v0.5.4" FontSize="15" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock Text="&#8226; 小组件管理页：16 项自实现桌面小组件&#10;&#8226; 点击开启 / 再次点击关闭 / 右键详细配置&#10;&#8226; 常见问题 115 条 · 优化大全 114 项"
+                                   FontSize="13" Opacity="0.7" Margin="18,0,0,0" />
                     </StackPanel>
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="10">
