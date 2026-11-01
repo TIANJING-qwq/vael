@@ -667,7 +667,7 @@ public partial class SimpleWidgetWindow : Window
             if (ms >= dur)
             {
                 t.Stop();
-                _big.RenderTransform = TransformOperations.Parse("translate(0,0)");
+                _big.RenderTransform = new Avalonia.Media.TranslateTransform(0, 0);
                 _big.Text = final;
                 _sub.Text = "点击再抛";
                 return;
@@ -676,7 +676,15 @@ public partial class SimpleWidgetWindow : Window
             var y = -46 * Math.Sin(Math.PI * p); // 上抛再落下
             var rot = 720 * p;                    // 空中转两圈
             _big.Text = (ms / 90) % 2 == 0 ? "正面" : "反面"; // 翻面闪烁
-            _big.RenderTransform = TransformOperations.Parse($"translate(0,{y:F1}) rotate({rot:F0})");
+            // 强类型 Transform（动态数值不走字符串解析）
+            _big.RenderTransform = new Avalonia.Media.TransformGroup
+            {
+                Children =
+                {
+                    new Avalonia.Media.RotateTransform(rot),
+                    new Avalonia.Media.TranslateTransform(0, y),
+                },
+            };
         };
         t.Start();
         _pick = t;
