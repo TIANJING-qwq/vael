@@ -102,13 +102,27 @@ public partial class WidgetView : UserControl
         }
     }
 
-    /// <summary>异步加载卡片封面图（picsum 随机图，seed=组件名保持稳定）</summary>
-    private static async System.Threading.Tasks.Task LoadCover(Image img, string seed)
+    /// <summary>加载卡片封面图：磁盘缓存优先（seed=文件名），无缓存才联网下载并存盘</summary>
+    private static async System.Threading.Tasks.Task LoadCover(Avalonia.Controls.Image img, string seed)
     {
         try
         {
-            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(6) };
-            var bytes = await http.GetByteArrayAsync($"https://picsum.photos/seed/{seed}/330/184");
+            var dir = System.IO.Path.Combine(SBtools.Models.ConfigManager.AppDataDir, "cover_cache");
+            System.IO.Directory.CreateDirectory(dir);
+            var file = System.IO.Path.Combine(dir, seed + ".jpg");
+
+            byte[] bytes;
+            if (System.IO.File.Exists(file))
+            {
+                bytes = await System.IO.File.ReadAllBytesAsync(file);
+            }
+            else
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+                bytes = await http.GetByteArrayAsync($"https://picsum.photos/seed/{seed}/330/184");
+                try { await System.IO.File.WriteAllBytesAsync(file, bytes); } catch { } // 缓存失败不影响显示
+            }
+
             using var ms = new System.IO.MemoryStream(bytes);
             var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { img.Source = bmp; img.Opacity = 1; });
