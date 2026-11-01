@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using FluentAvalonia.Styling;
 using SBtools.Controls;
 using SBtools.Models;
+using SBtools.Plugins;
 using SBtools.Services;
 using SBtools.Views;
 using System;
@@ -48,6 +49,7 @@ public partial class App : Application
                 // 不设置 desktop.MainWindow —— 避免某些 Avalonia 版本自动 Show()
                 // 只保留 MainWindow 内部的静态 _instance 引用，供托盘使用
                 var window = new MainWindow(startMinimized);
+                try { PluginManager.Instance.LoadAll(); } catch (Exception ex) { LogService.Log($"插件加载失败: {ex.Message}", "插件"); }
                 LogService.Log("自启动静默模式：不设置 MainWindow，主窗口不显示", "启动");
             }
             else
@@ -65,7 +67,10 @@ public partial class App : Application
 
                 SplashWindow.SetProgress(0.35, "载入桌面组件");
                 var window = new MainWindow(startMinimized);
-                SplashWindow.SetProgress(0.58, "构建主界面");
+                // ★ 插件在主窗口就绪后加载（此时 UI 线程可用，插件可安全注册选项卡/卡片）
+                SplashWindow.SetProgress(0.58, "加载插件");
+                try { PluginManager.Instance.LoadAll(); } catch (Exception ex) { LogService.Log($"插件加载失败: {ex.Message}", "插件"); }
+                SplashWindow.SetProgress(0.72, "构建主界面");
                 desktop.MainWindow = window;
                 window.Opened += async (_, _) =>
                 {

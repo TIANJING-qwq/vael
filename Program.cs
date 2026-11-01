@@ -64,16 +64,8 @@ class Program
             LogException("UpdateService", ex);
         }
 
-        // ★ 加载插件
-        try
-        {
-            PluginManager.Instance.LoadAll();
-        }
-        catch (Exception ex)
-        {
-            LogException("PluginManager", ex);
-        }
-
+        // ★ 插件加载移到 Avalonia 启动后（App.OnFrameworkInitializationCompleted）：
+        //    插件 OnLoad 可能触碰 Dispatcher.UIThread，平台未初始化会崩主循环
         try
         {
             LogInfo("进入 Avalonia 主循环");
