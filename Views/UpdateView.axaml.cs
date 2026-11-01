@@ -99,6 +99,12 @@ public partial class UpdateView : UserControl
     /// <summary>离线回退：内置版本日志（在线获取失败时显示）</summary>
     private static List<(string Tag, string Body)> FallbackChangelog { get; } = new()
     {
+        ("0.5.8", """
+            • 更新器：下载后启动带进度条的更新器，装完自动重启程序
+            • 版本日志跟随 GitHub Releases（更新页 + 主页本次更新卡片）
+            • 主窗口右下角「早期测试版本」水印；主页加测试版徽章
+            • LICENSE 附无病毒声明与免责条款
+            """),
         ("0.5.7", """
             • 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程
             • 修复启动崩溃与示例插件页重复注册

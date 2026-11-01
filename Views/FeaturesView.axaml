@@ -63,7 +63,7 @@
                         <TextBlock x:Name="UpdateCardTitle" Text="本次更新" FontSize="16" FontWeight="SemiBold" />
                         <TextBlock x:Name="UpdateCardBody"
                                    FontSize="13" Opacity="0.75" TextWrapping="Wrap"
-                                   Text="• 强制测试更新重做：无视版本比较直拉最新安装包，完整走升级流程&#10;• 修复启动崩溃与示例插件页重复注册&#10;• 更新页徽章改为测试版" />
+                                   Text="• 更新器：下载后启动带进度条的更新器，装完自动重启程序&#10;• 版本日志跟随 GitHub Releases（更新页 + 主页本次更新卡片）&#10;• 右下角「早期测试版本」水印 · 主页测试版徽章" />
                         <TextBlock Text="完整版本日志见「更新」页"
                                    FontSize="11" Opacity="0.45" />
                     </StackPanel>
