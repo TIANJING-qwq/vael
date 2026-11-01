@@ -35,20 +35,9 @@ public partial class WidgetWindow : Window
             catch { }
         }
 
-        // 卡片底：液态玻璃=暗玻璃多层渐变（配白字保证可读），其余=纯色
+        // 卡片底：液态玻璃=纯半透明暗色（靠系统模糊出材质，无静态渐变装饰），其余=纯色
         Card.Background = m.Mode == "liquid"
-            ? new LinearGradientBrush
-            {
-                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
-                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
-                GradientStops =
-                {
-                    new GradientStop(Avalonia.Media.Color.Parse("#50000000"), 0),
-                    new GradientStop(Avalonia.Media.Color.Parse("#40505060"), 0.35),
-                    new GradientStop(Avalonia.Media.Color.Parse("#20404050"), 0.6),
-                    new GradientStop(Avalonia.Media.Color.Parse("#60102030"), 1),
-                },
-            }
+            ? Avalonia.Media.Brush.Parse("#70282830")
             : Avalonia.Media.Brush.Parse(m.CardHex);
 
         // 字色：液态玻璃强制白字（暗玻璃底），其余按材质亮度反色

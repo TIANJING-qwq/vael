@@ -217,43 +217,19 @@ public partial class SimpleWidgetWindow : Window
             StopLiquid();
         }
         _card.Background = _mat.Mode == "liquid"
-            // 液态玻璃：多层对角渐变（左上高光 → 中段镜面 → 右下亮边），即使系统模糊不可用也有玻璃质感
-            ? new LinearGradientBrush
-            {
-                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
-                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
-                GradientStops =
-                {
-                    new GradientStop(Avalonia.Media.Color.Parse("#90FFFFFF"), 0),
-                    new GradientStop(Avalonia.Media.Color.Parse("#40505060"), 0.35),
-                    new GradientStop(Avalonia.Media.Color.Parse("#20404050"), 0.6),
-                    new GradientStop(Avalonia.Media.Color.Parse("#70F0F4FF"), 1),
-                },
-            }
+            ? null // 液态玻璃：卡片自身无底色，整片都是实时抓屏模糊材质（含文字区域）
             : new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
 
-        // 液态玻璃：白色渐变高光描边；其余半透明白描边
-        _card.BorderBrush = _mat.Mode == "liquid"
-            ? new LinearGradientBrush
-            {
-                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
-                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
-                GradientStops =
-                {
-                    new GradientStop(Avalonia.Media.Color.Parse("#C0FFFFFF"), 0),
-                    new GradientStop(Avalonia.Media.Color.Parse("#30FFFFFF"), 0.5),
-                    new GradientStop(Avalonia.Media.Color.Parse("#A0FFFFFF"), 1),
-                },
-            }
-            : Brush.Parse("#33FFFFFF");
-        _card.BorderThickness = new Avalonia.Thickness(_mat.Mode == "liquid" ? 1.5 : 1);
+        // 边框：统一细半透明白（去掉液态玻璃静态渐变高光圈——非实时的装饰）
+        _card.BorderBrush = Brush.Parse("#26FFFFFF");
+        _card.BorderThickness = new Avalonia.Thickness(1);
 
         // ★ 字色反色：液态玻璃压暗纱层+白字（背景是实时抓屏，对比度必须靠纱层保证）；
         //   其余按材质亮度反色（白底黑字 / 深底白字）
         var fore = _mat.Mode == "liquid" ? Brushes.White : _mat.ForeBrush;
         if (_scrim != null)
             _scrim.Background = _mat.Mode == "liquid"
-                ? new SolidColorBrush(Avalonia.Media.Color.Parse("#66000000"))
+                ? new SolidColorBrush(Avalonia.Media.Color.Parse("#45000000")) // 减淡纱层：透出实时材质又保可读
                 : Brushes.Transparent;
         SetForegrounds(_card, fore);
 
