@@ -4,13 +4,12 @@
 
 # Vael
 
-**校园网自动认证 · 轻量校园工具集**
+**轻量多功能系统工具箱 · 桌面小组件 · 系统优化 · 校园场景**
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia-11.3-8A2BE2)](https://avaloniaui.net/)
 [![FluentAvalonia](https://img.shields.io/badge/FluentAvalonia-2.2-0078D4)](https://github.com/amwx/FluentAvalonia)
 [![WebView2](https://img.shields.io/badge/WebView2-1.0-0078D4)](https://developer.microsoft.com/microsoft-edge/webview2/)
-[![LibVLCSharp](https://img.shields.io/badge/LibVLCSharp-3.8-FF6600)](https://github.com/videolan/libvlcsharp)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)](#)
 [![License](https://img.shields.io/badge/license-BSD--3-green)](LICENSE)
 
@@ -18,114 +17,114 @@
 
 ---
 
-## 📖 简介
+## 简介
 
-**Vael** 是一款基于 **C# / .NET 8 + Avalonia UI** 构建的桌面工具，采用 **Fluent Design** 风格界面，运行于 **Windows**。
+**Vael** 是一款基于 **C# / .NET 8 + Avalonia UI** 的 Windows 桌面工具箱，Fluent Design 风格。
 
-专注于校园网 Portal 自动认证场景，同时提供 CCTV 直播播放（基于官方 WebView2，全屏自动播放）、现代化通知系统、浏览器插件联动、云母/亚克力材质、插件系统等丰富功能。界面简洁、动画流畅、交互自然。
+一个程序装下：**16 款桌面小组件**（时钟 / 倒计时 / 性能监控 / 抛硬币 / 随机点名 / 番茄钟 / 计算器……）、**114 项系统优化**、**115 条 Windows 问题自动修复**、CCTV 定时直播、涩图合集、通知系统、插件生态、自动更新。另有校园网 Portal 自动认证等实用小功能。
 
-> 纯客户端工具，不收集任何用户数据，所有认证凭据均以 AES 加密存储在本地。
+> 纯客户端工具，不收集任何用户数据，敏感凭据 AES 加密存储在本地。
 
 ---
 
-## ✨ 功能特性
+## 功能总览
 
-### 🌐 网络
-- 智能检测网络连通性（并行测试多个国内站点）
-- 自动识别 Portal 认证页面（支持 ikuai8 等常见网关）
-- 一键完成校园网认证，支持自动连接与自动验证
-- 实时显示连接状态、本地 IP、公网 IP
-- 记录连接尝试次数与最后成功时间
+### 桌面小组件（v0.5.4 全新）
 
-### 🕒 定时播放 CCTV
-- 基于 **Edge WebView2** 打开央视官方直播页（`tv.cctv.com`），复用官方播放器与官方 CDN，稳定不卡
-- 提供 **CCTV-1 综合 / CCTV-13 新闻** 两个频道
-- 可设定每日时段（支持跨午夜），到点自动全屏播放
-- 打开后**自动全屏 + 自动播放**，自动隐藏央视页面自身的导航与播放器控件，只剩纯净画面
-- 关闭方式：右上角悬浮 ✕ / Esc / Alt+F4 / 托盘「关闭播放」
-- 定时播放可在「网络 → 定时播放」配置
+独立小窗悬浮桌面，**点击开启 / 再次点击关闭**，右键进入每个组件的详细配置：
 
-### 🔔 通知系统
+| 类别 | 组件 |
+|------|------|
+| 悬浮窗 | 性能监控（CPU/内存/网速，自动换单位）、数字时钟、高考倒计时、自定义倒计时、随机涩图 |
+| 趣味 | 骰子（右键改面数）、抛硬币（**上抛 + 空中旋转动画**）、一言卡片 |
+| 校园 | 随机点名（**老虎机滚动动画**）、随机题号、番茄钟 |
+| 实用 | 按键式计算器、电池、C 盘余量、内存 60 秒曲线图、休息提醒 |
+
+特性：
+
+- **材质与主界面同源**：云母 / 亚克力（下拉选择，实时切换全部组件）
+- **会话记忆**：退出自动保存，重启后所有小组件原位置原样恢复（含置顶状态）
+- **非线性动画**：开窗淡入缩放、关窗淡出缩退、抽奖平方减速
+- 每个组件独立**置顶开关**、位置记忆、右键参数配置
+- 涩图小组件支持历史回退（上一张按钮 / 中键）
+
+### 系统优化大全（114 项）
+
+一键或逐项执行的深度优化，覆盖：
+
+- **界面**：动画加速、菜单延迟、任务栏透明、小组件禁用……
+- **网络**：TCP 吞吐、网卡节能、DNS、网络限流解除……
+- **性能**：后台应用、游戏调度、内存压缩、存储感知……
+- **安全/隐私**：LSASS 保护、遥测、广告 ID、活动历史……
+
+每项带说明与风险提示，可一键还原。
+
+### Windows 问题自查修复（115 条）
+
+电脑卡顿 / 无声 / 断网 / 蓝屏 / U 盘读不出……115 条常见问题：
+
+- 按症状关键词搜索
+- **手动修复步骤**说明
+- **一键自动修复**（服务重启 / 注册表 / 网络栈重置等）
+
+### CCTV 定时直播
+
+- 基于 **Edge WebView2** 打开央视官方直播页（`tv.cctv.com`），复用官方播放器与 CDN，稳定不卡
+- CCTV-1 综合 / CCTV-13 新闻
+- 每日定时（支持跨午夜），到点自动全屏纯净播放
+
+### 通知系统
+
 - 亚克力半透明背景，自适应主题
-- 非线性动画（QuinticEaseOut / CubicEaseOut）
-- 通知自动向下堆叠，超出窗口时压缩
-- 主窗口隐藏时用独立置顶窗口显示通知
-- 支持新通知到达时自动折叠堆叠（可配置）
+- 非线性动画，多通知自动堆叠
+- 主窗口隐藏时独立置顶显示
 
-### 🖼️ 涩图合集
-- 图片资源**不打包进程序**，从 GitHub Releases 按需下载
-- 支持 **JPG / PNG / GIF / BMP / WebP / ICO** 等格式
-- **GIF 自动播放**，无需第三方库
-- 网格缩略图 + 独立大图预览窗口
-- 本地缓存到 `%APPDATA%\SchoolBusytools\gallery\`
-- 支持代理下载、可随时刷新/更新
+### 涩图合集
 
-### 🔌 插件系统
-- 支持第三方插件动态加载（.NET 8 类库）
-- 提供完整 API：日志、通知、系统操作、配置持久化、事件订阅
-- 每个插件有独立的数据目录和配置文件
-- 内置插件管理页面（查看状态、打开目录、重新加载）
+- 图片资源**不打包进程序**，从 GitHub Releases 按需下载（zip 流式读取，不占双倍空间）
+- JPG / PNG / **GIF 动图** / WebP 等格式
+- 网格缩略图 + 大图预览 + 小组件随机悬浮
+- 支持代理下载
+
+### 插件系统
+
+- 第三方 .NET 8 类库动态加载
+- 完整 API：日志、通知、系统操作、配置持久化、事件订阅
+- 每插件独立数据目录，内置管理页
 - 详见 **[插件开发文档](docs/PLUGIN_DEVELOPMENT.md)**
 
-### 🔗 浏览器插件联动
-- 检测到关键词时通过本地 IPC（`http://127.0.0.1:18520/notify`）通知Vael
-- 可配置自动动作：
-  - 打开多个浏览器**新窗口**（而非标签页）
-  - 系统音量调整（可**持续保持** N 秒）
-  - 右上角置顶遮罩
-  - 密码取消框（输入正确密码或超时后决定是否执行）
+### 浏览器插件联动
 
-### 🎨 界面与个性化
-- **窗口材质**（Windows 10/11）：
-  - **云母（Mica）**：从桌面壁纸取色
-  - **亚克力（AcrylicBlur）**：实时模糊背景
-  - 浅色模式下自动回退到不透明
-- **主题模式**：浅色 / 深色 / 跟随系统
-- **点击音效**：
-  - 全局监听，点击任意控件触发
-  - 支持自定义 `.wav` 音效（放到 `Sounds/` 目录）
-  - 音量可调（0-100）
-- **动画**：
-  - 窗口启动淡入 + 内容微缩放
-  - 弹窗进入/退出动画（缩放 + 淡入淡出）
-  - 关于页标题逐字符展开（V → Va → Vae → Vael）
-- **自定义标题栏**：图标 / 返回 / 最小化 / 最大化 / 关闭，空白处可拖动窗口
-- **主页**：展示应用图标、本次更新内容、亮点卡片（点击进入详情）、每日一言
+- 内置 Chrome 扩展（`Extensions/browser-plugin/`，chrome://extensions 加载即用）
+- 命中关键词 → 本地 IPC 通知 Vael → 自动动作：开浏览器窗口 / 调音量 / 置顶遮罩 / 密码确认
 
-### 🔄 自动更新
-- 基于 Updatum + GitHub Releases
-- **检测到新版本后自动下载并安装**（静默替换后自动重启）
-- **下载方式 / 安装方式**可在设置页分别调整为「自动 / 手动确认」
-- **手动检查**：关于页 → 检查更新
-- 下载时显示**进度条 + 实时速度（MB/s）**，可随时**取消下载**
-- 支持**代理**：直连 / gh-proxy.com / gh-proxy.org / v4 / v6
+### 自动更新
 
-### 🔒 安全码保护
-- **退出安全码**：点击「退出」按钮需输入安全码（AES 加密存储）
-- **更改设置需要安全码**：开启后，每次进入设置页需先验证，解锁后本次进入期间可自由修改
-- **安全码自我保护**：关闭安全码、或修改 / 清除安全码，都必须先验证当前安全码
-- 上述保护仅在安全码已开启且非空时生效；忘记安全码可手动编辑 `config.json` 恢复
+- GitHub Releases + 静默安装（Inno Setup 安装包，规避杀软误报路径）
+- 下载进度 + 实时速度 + 可取消，支持代理
+- 独立「更新」页：版本、代号、版本日志时间线
 
-### 🖥️ 桌面集成
-- 系统托盘图标 + 原生右键菜单
-- 关闭时询问：退出 / 最小化到托盘
-- 开机自启动（Windows 注册表）
-- 单实例检测：重复启动时唤起已有窗口
-- 系统音量控制（Core Audio API，强制取消静音）
+### 界面与个性化
 
-### ⚙️ 配置持久化
-- 所有设置自动保存到 `config.json`
-- 认证凭据 AES 加密存储
-- 重启后自动恢复所有配置
+- **云母 / 亚克力**窗口材质（与小组件同源实现）
+- 浅色 / 深色 / 跟随系统主题
+- 全局点击音效（自定义 `.wav`）
+- 非线性动画体系：启动、弹窗、下拉框、小组件开关
+- 自定义标题栏、托盘、开机自启、单实例
+
+### 网络工具
+
+- 校园网 Portal 自动认证（自动识别 ikuai8 等网关，一键 / 全自动）
+- 连通性检测、本地 / 公网 IP 显示
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
+
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - Windows 10 1809+（CCTV 需 Edge WebView2 运行时）
-- （可选）Visual Studio 2022 或 JetBrains Rider
 
 ### 从源码运行
 
@@ -138,8 +137,6 @@ dotnet run
 
 ### 发布独立可执行文件
 
-**Windows（自包含，用户无需装 .NET）：**
-
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true `
@@ -147,186 +144,45 @@ dotnet publish -c Release -r win-x64 --self-contained true `
   -o ./publish/win-x64
 ```
 
-### 一键构建脚本（Windows）
-
-```powershell
-# 首次运行需放开执行策略
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-
-# 一键发布 + Inno Setup 打包 + GitHub Release
-.\publish.ps1 -Version 0.4.5
-
-# 只构建不发布
-.\publish.ps1 -Version 0.4.5 -SkipPublish
-
-# 保留 publish/ 里的构建产物
-.\publish.ps1 -Version 0.4.5 -KeepArtifacts
-```
-
-脚本自动完成：
-
-1. 更新 `SBtools.csproj` / `installer.iss` 版本号
-2. `dotnet publish`
-3. 验证 VLC 依赖，缺失则从 NuGet 缓存复制
-4. 生成便携版 ZIP
-5. 调用 Inno Setup 生成安装包
-6. 通过 `gh` CLI 创建 GitHub Release 并上传资产
-7. 清理 `publish/` / `obj/` / `bin/`
-
-> **前置**：`gh` CLI 已安装并登录（`gh auth login`）
+> CI 推送 tag 即自动构建四平台 ZIP + Windows 安装包并发布 Release（`.github/workflows/release.yml`）。
 
 ---
 
-## 🖼️ 图库资源
-
-涩图合集的图片**不打包进程序**，存于独立 GitHub Release：
-
-```powershell
-# 把 bili.zip 放到项目根目录，然后运行：
-.\upload_gallery.ps1
-```
-
-脚本会自动创建 `gallery` 标签的 Release 并上传。用户端打开「涩图合集」页，点击「下载图库」即可下载到：
-
-```
-%APPDATA%\SchoolBusytools\gallery\bili.zip
-```
-
----
-
-## 🔌 插件开发
-
-Vael支持第三方插件扩展。快速上手：
-
-```csharp
-using SBtools.Plugins;
-
-public class MyPlugin : IXiYuePlugin
-{
-    public string Id => "com.example.myplugin";
-    public string Name => "我的插件";
-    public string Version => "1.0.0";
-    public string Author => "Your Name";
-    public string Description => "示例插件";
-
-    public void OnLoad(IPluginContext context)
-    {
-        context.Log("插件已加载");
-        context.Toast("插件", "Hello!");
-
-        context.KeywordMatched += kw =>
-        {
-            context.Toast("关键词命中", kw);
-        };
-    }
-
-    public void OnUnload() { }
-}
-```
-
-编译后把 `.dll` 丢到 `Plugins/` 目录即可（详见 **[插件开发文档](docs/PLUGIN_DEVELOPMENT.md)**）。
-
----
-
-## 📦 打包为安装程序
-
-### Windows（Inno Setup）
-
-```ini
-[Files]
-Source: "publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-```
-
-> 必须加 `recursesubdirs createallsubdirs`，否则 LibVLC 的 `plugins\` 子目录不会被打包。
-
----
-
-## 📁 项目结构
+## 项目结构（核心）
 
 ```text
 Vael/
-├── Assets/                              # 图标、图片资源
-│   ├── app.ico                          # Windows 应用图标
-│   ├── app.png                          # PNG 图标
-│   ├── logo.png                         # README 用 Logo
-│   └── screenshots/                     # 界面截图
-├── Controls/
-│   ├── NotificationToast                # 通知组件
-│   └── ToastHost                        # 通知堆叠容器
-├── Models/
-│   ├── ConfigManager.cs                 # 配置管理（持久化）
-│   ├── SecureStorage.cs                 # AES 加密存储
-│   ├── NetworkDetector.cs               # 网络检测
-│   └── WiFiAuthenticator.cs             # Portal 认证
-├── Plugins/                             # 插件系统
-│   ├── IXiYuePlugin.cs                  # 插件接口
-│   ├── IPluginContext.cs                # 上下文 API
-│   ├── PluginInfo.cs                    # 插件元信息
-│   ├── PluginContext.cs                 # 上下文实现
-│   └── PluginManager.cs                 # 加载器
 ├── Services/
-│   ├── CctvChannels.cs                  # CCTV 频道列表（CCTV-1/13）
-│   ├── PlaybackScheduler.cs             # 定时调度器
-│   ├── ScheduleConfig.cs                # 调度配置
-│   ├── AutoStartManager.cs              # 开机自启动
-│   ├── LogService.cs                    # 日志服务
-│   ├── NetworkMonitor.cs                # 网络监控
-│   ├── UpdateService.cs                 # 自动更新
-│   ├── LocalIpcServer.cs                # 浏览器插件 IPC
-│   ├── SystemVolume.cs                  # 系统音量控制
-│   ├── WindowBackdropService.cs         # 窗口材质
-│   ├── ClickSoundService.cs             # 点击音效
-│   └── GalleryService.cs                # 图库资源
-├── ViewModels/
+│   ├── SystemOptimizer.cs            # 系统优化大全（114 项）
+│   ├── WindowsProblemCatalog.cs      # 问题自查修复（115 条）
+│   ├── GalleryService.cs             # 图库（zip 流式读取）
+│   ├── UpdateService.cs              # 自动更新
+│   └── LocalIpcServer.cs             # 浏览器插件 IPC
 ├── Views/
-│   ├── FeaturesView.axaml               # 功能
-│   ├── NetworkView.axaml                # 网络
-│   ├── OptimizationView.axaml           # 系统优化
-│   ├── LabView.axaml                    # 实验室
-│   ├── GalleryView.axaml                # 涩图合集
-│   ├── PluginsView.axaml                # 插件管理
-│   ├── SettingsView.axaml               # 设置
-│   ├── AboutView.axaml                  # 关于
-│   ├── CctvWebPlayerWindow.axaml        # WebView2 全屏播放窗口
-│   ├── CloseConfirmDialog.axaml         # 关闭确认对话框
-│   ├── UpdateAvailableDialog.axaml      # 更新提示
-│   ├── UpdateDownloadDialog.axaml       # 更新下载
-│   ├── ImageViewerWindow.axaml          # 图片查看
-│   ├── GalleryDownloadDialog.axaml      # 图库下载
-│   ├── OverlayWindow.axaml              # 置顶遮罩
-│   └── PasswordPromptWindow.axaml       # 密码取消框
-├── docs/
-│   ├── PLUGIN_DEVELOPMENT.md            # 插件开发文档
-│   └── CHANGELOG.md                     # 更新日志
-├── Sounds/                              # 音效文件（.wav）
-├── App.axaml
-├── MainWindow.axaml
-├── Program.cs                           # 入口（含单实例检测）
-├── SBtools.csproj
-├── installer.iss                        # Inno Setup 脚本
-├── publish.ps1                          # 一键发布脚本
-└── upload_gallery.ps1                   # 图库上传脚本
+│   ├── WidgetView.axaml(.cs)         # 小组件管理页（16 款 + 材质下拉）
+│   ├── SimpleWidgetWindow.axaml.cs   # 通用小组件窗（材质/会话/动画/配置）
+│   ├── WidgetWindow.axaml            # 性能悬浮窗
+│   ├── UpdateView.axaml              # 更新页（版本日志时间线）
+│   ├── GalleryView.axaml             # 涩图合集
+│   └── OptimizationView.axaml        # 系统优化
+├── Extensions/browser-plugin/        # 内置浏览器扩展
+├── Plugins/                          # 插件系统
+└── .github/workflows/release.yml     # 一键发布流水线
 ```
 
 ---
 
-## 📁 配置文件位置
+## 配置文件位置
 
 | 平台 | 路径 |
 |------|------|
 | Windows | `%APPDATA%\SchoolBusytools\` |
 
-包含：
-
-- `config.json` — 应用配置（账号、定时、频道、主题、材质等）
-- `secure.key` — AES 加密密钥
-- `logs/` — 运行日志
-- `gallery/` — 图库缓存（`bili.zip`）
-- `plugins/{id}/` — 各插件独立数据目录
+包含：`config.json`（含小组件会话）、`secure.key`、`logs/`、`gallery/`、`cover_cache/`（小组件封面图缓存）、`plugins/{id}/`。
 
 ---
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 分类 | 技术 | 版本 |
 |------|------|------|
@@ -334,208 +190,67 @@ Vael/
 | 运行时 | .NET | 8 |
 | UI 框架 | Avalonia UI | 11.3 |
 | 设计风格 | FluentAvalonia | 2.2 |
-| MVVM | ReactiveUI | 20.1 |
 | 视频播放 | WebView2（Edge） | 1.0 |
-| 音效播放 | LibVLCSharp | 3.8 |
 | JSON | Newtonsoft.Json | 13.0 |
 | 自动更新 | Updatum | 1.4 |
-| 加密 | AES-256（本地密钥） | - |
+| 材质 | DWM（云母/亚克力）+ ACCENT 模糊 | - |
 
 ---
 
-## 🎨 自定义
-
-### 主题模式
-
-**设置页 → 主题 → 外观模式**：浅色 / 深色 / 跟随系统
-
-### 窗口材质
-
-**设置页 → 窗口材质**：
-
-| 选项 | 说明 |
-|------|------|
-| 云母（Win11 推荐） | 从桌面壁纸取色 |
-| 亚克力 | 实时模糊背景 |
-| 无 | 不透明背景 |
-
-> 云母和亚克力仅在**深色模式**下生效，浅色模式自动回退到不透明。
-
-### 点击音效
-
-**设置页 → 点击音效**：
-
-- 启用开关
-- 音量滑块（0-100）
-- 音效文件选择（把 `.wav` 放到 `Sounds/` 目录，点「刷新」）
-- 试听按钮
-
-### 通知参数
-
-编辑 `Controls/ToastHost.cs`：
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `Gap` | 通知间距 | 10 |
-| `StackedVisible` | 堆叠时露出高度 | 32 |
-| `AutoCollapseOnNew` | 新通知到达时自动折叠 | true |
-
-### 添加 CCTV 频道
-
-编辑 `Services/CctvChannels.cs`，把频道名加入 `Names` 列表：
-
-```csharp
-public static readonly string[] Names = { "CCTV-1 综合", "CCTV-13 新闻", "CCTV-5 体育" };
-```
-
-播放器会根据频道名里的台号自动打开对应央视直播页（例如 `CCTV-5 体育` → `https://tv.cctv.com/live/cctv5/`）。
-
-### 浏览器插件关键词
-
-编辑扩展目录里的 `airplane_keywords.js`：
-
-```javascript
-const AIRPLANE_KEYWORDS = [
-  "关键词1",
-  "关键词2",
-  // ...
-];
-```
-
----
-
-## ❓ 常见问题
+## 常见问题
 
 **Q: 首次运行较慢？**
-A: 单文件打包的 exe 首次启动需解压到临时目录，约 2～5 秒。后续启动会快很多。
+A: 单文件 exe 首次需解压，约 2～5 秒，之后正常。
 
 **Q: CCTV 无法播放？**
-A: CCTV 播放依赖 **Microsoft Edge WebView2 运行时**。Windows 11 一般自带；Windows 10 可到微软官网下载 Evergreen 运行时。国内网络下央视直播页（`tv.cctv.com`）可正常访问；若页面黑屏或需手动点播放，请反馈现象。
+A: 依赖 Edge WebView2 运行时，Win11 自带，Win10 到微软官网装 Evergreen。
 
 **Q: 杀毒软件报毒？**
-A: 未签名 exe 可能被 Windows Defender 误报，请添加信任，或使用 EV 证书签名后分发。
+A: 未签名 exe 可能被误报（HEUR 类），请添加信任；已改用安装包静默升级降低误报率。
 
-**Q: 设置无法保存？**
-A: 检查 `%APPDATA%\SchoolBusytools\` 目录是否有写入权限。查看调试输出里的 `[Config]` 日志。
-
-**Q: 自动更新失败？**
-A: 设置页里选一个代理（gh-proxy.com 等），或检查网络是否能访问 GitHub API。
-
-**Q: 浏览器插件无法连接Vael？**
-A: 需管理员权限注册 URL 前缀：
-
-```powershell
-netsh http add urlacl url=http://127.0.0.1:18520/ user=Everyone
-```
+**Q: 小组件没恢复 / 没动画？**
+A: 会话每 10 秒自动保存，退出后重启 3 秒内恢复；动画需要系统未关闭视觉特效。
 
 **Q: 云母/亚克力没效果？**
-A: 需要 Windows 10 1809+。浅色模式下云母/亚克力不可用，会自动回退到不透明背景（这是 Windows 限制）。
+A: 亚克力走 ACCENT 合成模糊（Win10 1803+ 可用），云母需 Win11；浅色模式自动回退。
 
-**Q: 插件加载失败？**
-A: 打开「插件」页查看错误信息。常见原因：缺依赖 DLL、主程序版本不匹配、DLL 与主程序打包在一起（应加 `<Private>false</Private>`）。
-
----
-
-## 🔄 更新日志
-
-当前版本：**v0.4.5**（2026-10）
-
-### v0.4.5
-- **CCTV 直播重构**：弃用 LibVLC + 第三方 IPTV 源，改用 **Edge WebView2** 打开央视官方直播页，全屏自动播放、稳定不卡
-- 频道精简为 **CCTV-1 / CCTV-13** 两个
-- **主页重做**：图标 + 本次更新内容 + 亮点卡片（点击进详情）+ 每日一言
-- **自定义标题栏**：图标 / 返回 / 最小化 / 最大化 / 关闭
-- 应用更名 **Vael**
-
-### v0.4.4
-- 新增**更改设置需要安全码**：进入设置页需先验证，解锁后本次可自由修改
-- **安全码自我保护**：关闭或修改安全码都必须先验证当前安全码
-- 新增完整更新日志 `docs/CHANGELOG.md`
-
-### v0.4.3
-- 新增**退出安全码**：退出应用需输入密码确认，设置页可配置
-- 关于页重构，新增作者图片资源
-- 插件信息展示增强，`PluginInfo` 元数据扩展
-- 修复关于页样式问题
-
-### v0.4.2
-- **优化图库图片内存占用**，重构缩略图 / 大图加载逻辑
-- **彻底修复开机自启动问题**（重写 `AutoStartManager`）
-- 更新服务流程改进
-
-### v0.4.1
-- 修复最小化到托盘、图库图片加载、网络验证问题
-- 补充 `.gitignore` 排除项
-
-### v0.4.0
-- 与 v0.3.9 同一提交，仅版本号对齐
-
-### v0.3.9
-- 新增**插件系统**（`IXiYuePlugin` + `PluginManager` + 插件管理页）
-- 新增**涩图合集**（图片按需从 GitHub Release 下载）
-- 许可证变更为 BSD-3
-
-📋 完整历史（含 v0.3.1 以来的全部版本）见 **[更新日志](docs/CHANGELOG.md)**。
+**Q: 自动更新失败？**
+A: 设置页选代理（gh-proxy.com 等），或检查 GitHub 连通性。
 
 ---
 
-## 🤝 贡献
+## 更新日志（节选）
 
-欢迎提交 Issue 和 Pull Request。
+### v0.5.4（Umi）
+- **小组件管理页**：16 款自实现桌面小组件，点击开关、右键详细配置
+- 抛硬币上抛旋转动画、点名老虎机滚动动画、开关窗非线性淡入淡出
+- 云母 / 亚克力材质实时切换；会话记忆（位置/置顶/参数）
+- 常见问题修复 115 条、优化大全 114 项
+- 更新页重做（版本日志时间线）；合入浏览器扩展
 
-1. Fork 本仓库
+### v0.5.2
+- Windows 更新改安装包静默升级；CI 产出安装包
 
-2. 创建特性分支：
+### v0.5.1
+- 关于页彩蛋；下拉框非线性动画
 
-   ```
-   git checkout -b feature/amazing-feature
-   ```
-
-3. 提交改动：
-
-   ```
-   git commit -m "Add amazing feature"
-   ```
-
-4. 推送分支：
-
-   ```
-   git push origin feature/amazing-feature
-   ```
-
-5. 提交 Pull Request
+完整历史见 **[更新日志](docs/CHANGELOG.md)**。
 
 ---
 
-## 📚 文档
+## 贡献
 
-- [插件开发文档](docs/PLUGIN_DEVELOPMENT.md)
-- [更新日志](docs/CHANGELOG.md)
+欢迎 Issue / PR：Fork → 特性分支 → 提交 → Pull Request。
 
----
+## 许可证
 
-## 📄 许可证
-
-本项目采用 **BSD-3 License** 授权。
-
----
-
-## 🙏 致谢
-
-- [Avalonia UI](https://avaloniaui.net/) — 跨平台 XAML 框架
-- [FluentAvalonia](https://github.com/amwx/FluentAvalonia) — Fluent Design 控件库
-- [ReactiveUI](https://www.reactiveui.net/) — MVVM 框架
-- [LibVLCSharp](https://github.com/videolan/libvlcsharp) — 视频播放
-- [Updatum](https://github.com/sn4k3/Updatum) — 自动更新
-- 所有开源贡献者
+**BSD-3 License**。
 
 ---
 
 <div align="center">
 
-**Vael 项目组 · tianjing & deepseek**
-
-版本 0.4.5 · 2026
+**Vael · tianjing & deepseek**
 
 ⭐ 如果这个项目对你有帮助，欢迎点一个 Star！
 
