@@ -76,6 +76,8 @@ public partial class WidgetWindow : Window
     {
         InitializeComponent();
         Instance = this;
+        // ★ 打开即应用当前材质（与其他小组件一致，不再每次默认黑卡）
+        try { ApplyMaterial(SimpleWidgetWindow.Material); } catch { }
         Closed += (_, _) => { if (Instance == this) Instance = null; };
         Position = new Avalonia.PixelPoint(
             (int)(Screens.Primary?.WorkingArea.Width - 260 ?? 1200),
@@ -86,12 +88,17 @@ public partial class WidgetWindow : Window
 
         if (OperatingSystem.IsWindows())
         {
-            try
+            // ★ 计数器创建（含网络实例枚举）很慢 → 后台线程，UI 不卡顿，就绪前显示 --
+            _ = Task.Run(() =>
             {
-                _cpu = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                _net = new PerformanceCounter("Network Interface", "Bytes Total/sec", GetNetInstance());
-            }
-            catch { }
+                try
+                {
+                    var cpu = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                    var net = new PerformanceCounter("Network Interface", "Bytes Total/sec", GetNetInstance());
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { _cpu = cpu; _net = net; });
+                }
+                catch { }
+            });
         }
 
         var t = new System.Timers.Timer(2000) { AutoReset = true };

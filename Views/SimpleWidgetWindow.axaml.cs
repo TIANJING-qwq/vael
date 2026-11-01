@@ -10,6 +10,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Animation;
+using SBtools.Models;
 
 namespace SBtools.Views;
 
@@ -169,7 +170,7 @@ public partial class SimpleWidgetWindow : Window
         };
 
         _all.Add(this);
-        Closed += (_, _) => { _all.Remove(this); StopLiquid(); };
+        Closed += (_, _) => { _all.Remove(this); StopLiquid(); SaveSession(); };
         Position = new Avalonia.PixelPoint(
             (int)(Screens.Primary?.WorkingArea.Width - (int)Width - 20 ?? 1200),
             90 + _rnd.Next(200));
@@ -220,9 +221,9 @@ public partial class SimpleWidgetWindow : Window
             ? null // 液态玻璃：卡片自身无底色，整片都是实时抓屏模糊材质（含文字区域）
             : new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
 
-        // 边框：统一细半透明白（去掉液态玻璃静态渐变高光圈——非实时的装饰）
+        // 边框：液态玻璃完全无边（纯实时材质），其余细半透明白
         _card.BorderBrush = Brush.Parse("#26FFFFFF");
-        _card.BorderThickness = new Avalonia.Thickness(1);
+        _card.BorderThickness = new Avalonia.Thickness(_mat.Mode == "liquid" ? 0 : 1);
 
         // ★ 字色反色：液态玻璃压暗纱层+白字（背景是实时抓屏，对比度必须靠纱层保证）；
         //   其余按材质亮度反色（白底黑字 / 深底白字）
@@ -247,6 +248,61 @@ public partial class SimpleWidgetWindow : Window
             }
             catch { }
         }
+    }
+
+    // ===== 会话记录：退出时保存打开的小组件，启动时恢复 =====
+    private sealed class SessionItem
+    {
+        public int K { get; set; }             // Kind
+        public string T { get; set; } = "";    // Title
+        public string G { get; set; } = "";    // Target(O格式)
+        public int R { get; set; }             // Range
+        public int F { get; set; }             // DiceFaces
+        public int P { get; set; }             // PomoMinutes
+        public int X { get; set; }             // 位置X
+        public int Y { get; set; }             // 位置Y
+        public bool Z { get; set; }            // 置顶
+    }
+
+    public static void SaveSession()
+    {
+        try
+        {
+            var list = _all.Select(w => new SessionItem
+            {
+                K = (int)w._kind,
+                T = w._cfg.Title,
+                G = w._cfg.Target.ToString("o"),
+                R = w._cfg.Range,
+                F = w._cfg.DiceFaces,
+                P = w._cfg.PomoMinutes,
+                X = w.Position.X,
+                Y = w.Position.Y,
+                Z = w.Topmost,
+            }).ToList();
+            ConfigManager.Instance.WidgetSession = System.Text.Json.JsonSerializer.Serialize(list);
+        }
+        catch { }
+    }
+
+    public static void RestoreSession()
+    {
+        try
+        {
+            var json = ConfigManager.Instance.WidgetSession;
+            if (string.IsNullOrWhiteSpace(json)) return;
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<SessionItem>>(json);
+            if (list == null) return;
+            foreach (var it in list)
+            {
+                var cfg = new Config { Title = it.T, Range = it.R, DiceFaces = it.F, PomoMinutes = it.P };
+                if (DateTime.TryParse(it.G, out var g)) cfg.Target = g;
+                var w = new SimpleWidgetWindow((Kind)it.K, cfg) { Topmost = it.Z };
+                w.Position = new Avalonia.PixelPoint(it.X, it.Y);
+                w.Show();
+            }
+        }
+        catch { }
     }
 
     private static void SetForegrounds(object? o, IBrush brush)

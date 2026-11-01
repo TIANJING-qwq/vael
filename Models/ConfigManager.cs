@@ -118,6 +118,13 @@ public class ConfigManager
         set { _data.DesktopWidgetEnabled = value; Save(); }
     }
 
+    /// <summary>上次退出时打开的小组件会话（JSON：类型/配置/位置/置顶）</summary>
+    public string WidgetSession
+    {
+        get => _data.WidgetSession;
+        set { _data.WidgetSession = value; Save(); }
+    }
+
     internal static System.Collections.Generic.HashSet<System.DayOfWeek> MaskToDays(int mask)
     {
         var set = new System.Collections.Generic.HashSet<System.DayOfWeek>();
@@ -455,6 +462,7 @@ public class ConfigManager
         public int ScheduleEndMinutes { get; set; } = 19 * 60 + 30;
         public int ScheduleDays { get; set; } = 0; // 位掩码 bit0=周日..bit6=周六；0=每天
         public bool DesktopWidgetEnabled { get; set; } = false;
+        public string WidgetSession { get; set; } = "";
         public string ScheduleChannel { get; set; } = "CCTV-13 新闻";
 
         // ★ 播放器：上次频道 / 每个频道首选源
