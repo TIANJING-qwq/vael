@@ -31,6 +31,7 @@ public partial class WidgetView : UserControl
         ("\uE74E", "磁盘余量", "C盘剩余", "disk"),
         ("\uE823", "休息提醒", "20分钟循环", "rest"),
         ("\uE999", "内存曲线", "60秒历史曲线", "memwatch"),
+        ("\uE718", "Aqua Dock", "macOS风程序坞", "dock"),
     };
 
     private readonly Dictionary<string, Window> _open = new();
@@ -204,6 +205,7 @@ public partial class WidgetView : UserControl
             "disk" => NewDiskWidget(),
             "rest" => StartRestReminder(),
             "memwatch" => New(SimpleWidgetWindow.Kind.Battery, "内存占用"), // 复用布局
+            "dock" => DockWindow.ShowOrCreate(), // AquaDesk 风程序坞（独立窗，状态自持久化）
             _ => throw new ArgumentException(key),
         };
         if (w != null) { _open[key] = w; w.Closed += (_, _) => _open.Remove(key); }

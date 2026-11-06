@@ -80,6 +80,7 @@ public partial class MainWindow : Window
         {
             await System.Threading.Tasks.Task.Delay(3000);
             try { SimpleWidgetWindow.RestoreSession(); } catch { }
+            try { if (DockWindow.ShouldRestore) DockWindow.ShowOrCreate(); } catch { } // Aqua Dock 会话恢复
             try
             {
                 if (ConfigManager.Instance.DesktopWidgetEnabled &&
