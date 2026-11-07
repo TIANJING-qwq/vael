@@ -63,9 +63,31 @@ internal class PluginContext : IPluginContext
         LogService.Log($"[{PluginId}] {message}", "插件");
     }
 
-    public void Toast(string title, string message, int durationSeconds = 5)
+    public void Toast(string title, string message, int durationSeconds = 5, string? soundFile = null)
     {
         MainWindow.PushToast(title, message, durationSeconds);
+        // ★ 通知音效：插件目录优先，其次程序 Sounds 目录
+        if (!string.IsNullOrWhiteSpace(soundFile))
+        {
+            try
+            {
+                var local = Path.Combine(DataDirectory, soundFile);
+                var builtin = Path.Combine(AppContext.BaseDirectory, "Sounds", soundFile);
+                var path = File.Exists(local) ? local : File.Exists(builtin) ? builtin : null;
+                if (path == null)
+                {
+                    Log($"通知音效不存在: {soundFile}（放在插件目录或 Sounds/ 下）");
+                    return;
+                }
+                if (OperatingSystem.IsWindows())
+                    new System.Media.SoundPlayer(path).Play();
+                else if (OperatingSystem.IsMacOS())
+                    Process.Start("afplay", $"\"{path}\"");
+                else
+                    Process.Start("aplay", $"\"{path}\"");
+            }
+            catch (Exception ex) { Log($"通知音效播放失败: {ex.Message}"); }
+        }
     }
 
     // ============================================================

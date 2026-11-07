@@ -1,8 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="SBtools.Views.UpdateView">
-    <ScrollViewer>
-        <StackPanel Margin="24,16" Spacing="14" MaxWidth="740" HorizontalAlignment="Left">
+    <!-- 响应式：窄窗口随宽度收缩，宽窗口限 760 居中 -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24,16" Spacing="14" MaxWidth="760"
+                    HorizontalAlignment="Stretch">
 
             <!-- 头部：大标题 + 版本徽章 -->
             <StackPanel Orientation="Horizontal" Spacing="14">

@@ -29,8 +29,8 @@ public interface IPluginContext
     /// <summary>写日志。会出现在「实验室」的日志列表里，同时写入文件</summary>
     void Log(string message);
 
-    /// <summary>弹出右下角通知</summary>
-    void Toast(string title, string message, int durationSeconds = 5);
+    /// <summary>弹出右下角通知。soundFile 可选：wav 文件名（先找插件目录，再找程序 Sounds 目录）</summary>
+    void Toast(string title, string message, int durationSeconds = 5, string? soundFile = null);
 
     // ============================================================
     // 系统操作

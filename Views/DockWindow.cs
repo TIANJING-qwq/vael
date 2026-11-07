@@ -138,11 +138,12 @@ public class DockWindow : Window
         {
             CornerRadius = new CornerRadius(18),
             Padding = new Thickness(10, 6, 10, 8),
-            ClipToBounds = true,
+            ClipToBounds = false, // ★ 图标放大可越出卡片上缘（mac 行为）
         };
-        _strip = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        _strip = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Bottom };
         _card.Child = _strip;
-        Content = _card;
+        // ★ 修穿模：卡片上方预留 46px 透明区，放大 1.55x 的图标有地方长，不会被窗口边界裁掉
+        Content = new Grid { Margin = new Thickness(0, 46, 0, 0), Children = { _card } };
 
         RebuildIcons();
         ApplyMaterial(SimpleWidgetWindow.Material);
@@ -160,7 +161,7 @@ public class DockWindow : Window
             WindowStartupLocation = WindowStartupLocation.Manual;
             Position = new PixelPoint(
                 Math.Max(60, (int)((Screens.Primary?.WorkingArea.Width ?? 1400) / 2 - 260)),
-                (Screens.Primary?.WorkingArea.Bottom ?? 900) - 110);
+                (Screens.Primary?.WorkingArea.Bottom ?? 900) - 110 - 46); // 46=顶部图标放大预留区
         }
 
         // 拖动：空白处左键
@@ -341,22 +342,17 @@ public class DockWindow : Window
                 if (m.Backdrop == 1) _ = DwmSetWindowAttribute(hwnd, 38, ref bd, 4);
                 int pref = 2;
                 _ = DwmSetWindowAttribute(hwnd, 33, ref pref, 4);
+                // ★ 去白框：DWM 边框色设为 NONE（Win11 默认会给窗口描一圈系统色边）
+                int none = unchecked((int)0xFFFFFFFE);
+                _ = DwmSetWindowAttribute(hwnd, 34, ref none, 4);
             }
         }
         catch { }
 
-        _card.Background = m.Gloss
-            ? null // 真液态玻璃：底由折射着色器绘制
-            : new SolidColorBrush(Color.Parse(m.CardHex));
-        _card.BorderBrush = Brush.Parse(m.Gloss ? "#59FFFFFF" : "#26FFFFFF");
+        _card.Background = new SolidColorBrush(Color.Parse(m.CardHex));
+        _card.BorderBrush = Brush.Parse("#26FFFFFF");
         _card.BorderThickness = new Thickness(1);
-        if (m.Gloss)
-        {
-            // ★ 真折射液态玻璃：采样壁纸 + SKSL 边缘弯曲 + RGB 色散（LiquidGlassUI 路数）
-            var glass = new Controls.LiquidGlass { CornerRadius = 18, Child = _strip };
-            _card.Child = glass;
-        }
-        else _card.Child = _strip;
+        _card.Child = _strip;
     }
 
     [DllImport("dwmapi.dll")]

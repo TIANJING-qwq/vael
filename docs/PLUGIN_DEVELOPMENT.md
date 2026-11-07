@@ -93,7 +93,7 @@ copy bin\Release\net8.0\MyPlugin.dll  <Vael目录>\Plugins\
 | API | 说明 |
 |-----|------|
 | `Log(msg)` | 写日志（实验室可见 + 文件） |
-| `Toast(title, msg, sec)` | 右下角通知 |
+| `Toast(title, msg, sec, soundFile?)` | 右下角通知；第四个参数可选 wav 音效（先找插件目录，再找程序 `Sounds/`） |
 
 ### 系统操作
 

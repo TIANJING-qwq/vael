@@ -70,6 +70,14 @@ public sealed class BuiltinDemoPlugin : IXiYuePlugin
         var logBtn = new Button { Content = "写一条日志", Padding = new Thickness(16, 6) };
         logBtn.Click += (_, _) => { _ctx.Log("这是示例插件写的日志"); result.Text = "日志已写入（实验室 → 日志）"; };
 
+        // ★ 通知 + 音效演示（Toast 第四个参数；wav 放插件目录或程序 Sounds/ 下）
+        var sndBtn = new Button { Content = "通知+音效", Padding = new Thickness(16, 6) };
+        sndBtn.Click += (_, _) =>
+        {
+            _ctx.Toast("示例插件", "这条通知带着音效（Toast 第 4 个参数）", 5, "冰冰冰.wav");
+            result.Text = "已发送带音效的通知";
+        };
+
         var cnt = new TextBlock { Opacity = 0.7, Text = $"启动至今配置读取演示：{_ctx.GetConfigInt("demo_reads", 0) + 1}" };
         _ctx.SetConfigInt("demo_reads", _ctx.GetConfigInt("demo_reads", 0) + 1);
 
@@ -77,6 +85,7 @@ public sealed class BuiltinDemoPlugin : IXiYuePlugin
         buttons.Children.Add(saveBtn);
         buttons.Children.Add(readBtn);
         buttons.Children.Add(logBtn);
+        buttons.Children.Add(sndBtn);
 
         return new StackPanel
         {
