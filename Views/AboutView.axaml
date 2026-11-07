@@ -3,257 +3,189 @@
              x:Class="SBtools.Views.AboutView">
 
     <UserControl.Styles>
-        <!-- 现代卡片 -->
-        <Style Selector="Border.info-card">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+        <!-- 头像：强调色描边 + 悬停光晕 -->
+        <Style Selector="Border.avatar">
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="#660067C0"/>
+            <Setter Property="BoxShadow" Value="0 4 14 rgba(0,103,192,0.25)"/>
+        </Style>
+        <Style Selector="Border.avatar:pointerover">
+            <Setter Property="BorderBrush" Value="#0067C0"/>
+            <Setter Property="BoxShadow" Value="0 6 22 rgba(0,103,192,0.5)"/>
+        </Style>
+        <!-- 玻璃胶囊（放渐变上） -->
+        <Style Selector="Border.pill">
+            <Setter Property="Background" Value="#26000000"/>
+            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="24,18"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="11,4"/>
         </Style>
-        <!-- 信息行 -->
-        <Style Selector="TextBlock.row-label">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Opacity" Value="0.55"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style Selector="TextBlock.row-value">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <!-- 技术栈胶囊 -->
-        <Style Selector="Border.chip">
+        <!-- 角色小胶囊 -->
+        <Style Selector="Border.role">
             <Setter Property="Background" Value="#140078D4"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8,2"/>
         </Style>
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32,24"
-                    MaxWidth="620"
-                    HorizontalAlignment="Center"
-                    Spacing="14">
+        <StackPanel Margin="28,22" MaxWidth="640" Spacing="16" HorizontalAlignment="Stretch">
 
-            <!-- ============ Hero 卡 ============ -->
-            <Border Classes="info-card">
-                <StackPanel Spacing="8" HorizontalAlignment="Center">
-                    <Image Name="AppIcon"
-                           Source="/Assets/app.png"
-                           Width="84" Height="84"
-                           HorizontalAlignment="Center"
-                           Margin="0,4,0,0"
-                           Opacity="0" />
+            <!-- ============ 渐变横幅 ============ -->
+            <Border CornerRadius="18" ClipToBounds="True" Height="196">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#0067C0" Offset="0"/>
+                        <GradientStop Color="#5A5FD0" Offset="0.5"/>
+                        <GradientStop Color="#00B7C3" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
 
-                    <StackPanel Name="TitlePanel"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Spacing="2">
-                        <TextBlock Name="Letter0" Text="V" FontSize="40" FontWeight="Bold" Foreground="#0067c0"/>
-                        <TextBlock Name="Letter1" Text="a" FontSize="40" FontWeight="Bold" Foreground="#5A5FD0"/>
-                        <TextBlock Name="Letter2" Text="e" FontSize="40" FontWeight="Bold" Foreground="#7B3FF2"/>
-                        <TextBlock Name="Letter3" Text="l" FontSize="40" FontWeight="Bold" Foreground="#00B7C3"/>
-                    </StackPanel>
+                <Grid>
+                    <!-- 光斑装饰 -->
+                    <Border Width="220" Height="220" CornerRadius="110"
+                            Background="#22FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="-70,-70,0,0"/>
+                    <Border Width="150" Height="150" CornerRadius="75"
+                            Background="#1AFFFFFF" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Margin="0,0,-40,-40"/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                        <Border Background="#F59E0B" CornerRadius="6" Padding="8,3">
-                            <TextBlock Text="测试版" FontSize="11" Foreground="Black" FontWeight="SemiBold"/>
+                    <Grid Margin="28,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 图标：白环 -->
+                        <Border Grid.Column="0" Width="86" Height="86" CornerRadius="20"
+                                Background="#40000000" BorderBrush="#99FFFFFF" BorderThickness="1.5"
+                                Margin="0,0,22,0" VerticalAlignment="Center"
+                                ClipToBounds="True">
+                            <Image Name="AppIcon" Source="/Assets/app.png"
+                                   Width="64" Height="64" Stretch="Uniform" Opacity="0"/>
                         </Border>
-                        <Border Classes="chip">
-                            <TextBlock Text="BSD-3 开源" FontSize="11" Foreground="#0067c0"/>
-                        </Border>
-                    </StackPanel>
 
-                    <TextBlock Name="ChineseName"
-                               Text="Vael"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="#0067c0"
-                               HorizontalAlignment="Center"
-                               Opacity="0" />
+                        <StackPanel Grid.Column="1" Spacing="7" VerticalAlignment="Center">
+                            <StackPanel Name="TitlePanel" Orientation="Horizontal" Spacing="1">
+                                <TextBlock Name="Letter0" Text="V" FontSize="40" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock Name="Letter1" Text="a" FontSize="40" FontWeight="Bold" Foreground="#E8FFFFFF"/>
+                                <TextBlock Name="Letter2" Text="e" FontSize="40" FontWeight="Bold" Foreground="#E8FFFFFF"/>
+                                <TextBlock Name="Letter3" Text="l" FontSize="40" FontWeight="Bold" Foreground="#E8FFFFFF"/>
+                            </StackPanel>
 
-                    <TextBlock Name="LineDesc"
-                               Text="多功能 Windows 工具箱 · 小组件 · 插件系统"
-                               FontSize="12"
-                               Opacity="0.6"
-                               HorizontalAlignment="Center"/>
+                            <TextBlock Name="ChineseName" Text="Vael" FontSize="13" Foreground="#E8FFFFFF"
+                                       FontWeight="SemiBold" Opacity="0"/>
 
-                    <Border Name="Divider"
-                            Height="1" Width="180"
-                            Background="{DynamicResource ControlStrokeColorDefaultBrush}"
-                            Margin="0,8"
-                            Opacity="0" />
-                </StackPanel>
-            </Border>
+                            <TextBlock Name="LineDesc" Text="多功能 Windows 工具箱 · 小组件 · 插件系统"
+                                       FontSize="13" Foreground="#D9FFFFFF" Opacity="0"/>
 
-            <!-- ============ 信息卡 ============ -->
-            <Border Classes="info-card">
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                    <Grid.Styles>
-                        <Style Selector="Grid > Border.row-line">
-                            <Setter Property="Height" Value="1"/>
-                            <Setter Property="Grid.ColumnSpan" Value="2"/>
-                            <Setter Property="Background" Value="{DynamicResource DividerStrokeColorDefaultBrush}"/>
-                            <Setter Property="Opacity" Value="0.6"/>
-                            <Setter Property="Margin" Value="0,9"/>
-                        </Style>
-                    </Grid.Styles>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                                <Border Background="#F59E0B" CornerRadius="999" Padding="11,4">
+                                    <TextBlock Text="测试版" FontSize="11" Foreground="Black" FontWeight="SemiBold"/>
+                                </Border>
+                                <Border Classes="pill">
+                                    <TextBlock Name="LineVersion" Text="版本 0.5.8" FontSize="11" Foreground="White" Opacity="0"/>
+                                </Border>
+                                <Border Classes="pill">
+                                    <TextBlock Text="BSD-3 开源" FontSize="11" Foreground="White"/>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="row-label" Text="版本" Margin="0,0,28,0"/>
-                    <TextBlock Grid.Row="0" Grid.Column="1" Classes="row-value" Name="LineVersion" Text="0.5.8" Opacity="0"/>
-
-                    <Border Grid.Row="1" Classes="row-line"/>
-
-                    <TextBlock Grid.Row="2" Grid.Column="0" Classes="row-label" Text="技术栈" Margin="0,0,28,0"/>
-                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <Border Classes="chip"><TextBlock Text=".NET 8" FontSize="11" Foreground="#0067c0"/></Border>
-                        <Border Classes="chip"><TextBlock Text="Avalonia 11" FontSize="11" Foreground="#0067c0"/></Border>
-                        <Border Classes="chip"><TextBlock Text="FluentAvalonia" FontSize="11" Foreground="#0067c0"/></Border>
-                    </StackPanel>
-
-                    <Border Grid.Row="3" Grid.Column="0" Classes="row-line"/>
-
-                    <TextBlock Grid.Row="4" Grid.Column="0" Classes="row-label" Text="构建" Margin="0,0,28,0" Grid.ColumnSpan="1"/>
-                    <TextBlock Grid.Row="4" Grid.Column="1" Classes="row-value" Name="LineBuild"
-                               Text="基于 C# / .NET 8 + Avalonia UI 构建" Opacity="0"/>
+                    <!-- 隐藏动画锚点 -->
+                    <Border Name="Divider" Height="1" Width="0" Background="Transparent" Opacity="0"/>
                 </Grid>
             </Border>
 
-            <!-- ============ 制作人员卡 ============ -->
-            <Border Name="CreditsSection" Classes="info-card" Opacity="0">                <StackPanel Spacing="14">
-                    <TextBlock Text="制作人员"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Opacity="0.7"
-                               HorizontalAlignment="Center"/>
+            <!-- ============ 元信息条 ============ -->
+            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <TextBlock Name="LineBuild" Text="基于 C# / .NET 8 + Avalonia UI 构建"
+                           FontSize="12" Opacity="0"/>
+                <TextBlock Text="·" FontSize="12" Opacity="0.35"/>
+                <TextBlock Name="LineAuthor" Text="Vael 项目组制作" FontSize="12" Opacity="0"/>
+                <TextBlock Text="·" FontSize="12" Opacity="0.35"/>
+                <TextBlock Name="LineTeam" Text="tianjing &amp; deepseek" FontSize="12" Opacity="0"/>
+            </StackPanel>
+
+            <!-- ============ 制作人员 ============ -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="16" Padding="24,18"
+                    Name="CreditsSection" Opacity="0">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="制作人员" FontSize="14" FontWeight="SemiBold"
+                               Opacity="0.75" HorizontalAlignment="Center"/>
 
                     <Grid>
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Spacing="36">
-
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="40">
                             <!-- TIANJING -->
-                            <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <Border Width="72" Height="72"
-                                        CornerRadius="36"
-                                        ClipToBounds="True"
-                                        HorizontalAlignment="Center"
-                                        Cursor="Hand"
-                                        PointerPressed="TianjingAvatar_PointerPressed">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" Width="96">
+                                <Border Classes="avatar" Width="72" Height="72" CornerRadius="36"
+                                        ClipToBounds="True" HorizontalAlignment="Center"
+                                        Cursor="Hand" PointerPressed="TianjingAvatar_PointerPressed">
                                     <Image x:Name="TJImage" Stretch="UniformToFill"/>
                                 </Border>
-                                <TextBlock Text="TIANJING"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
+                                <TextBlock Text="TIANJING" FontSize="13" FontWeight="SemiBold"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="开发者"
-                                           FontSize="11"
-                                           Opacity="0.55"
-                                           HorizontalAlignment="Center"/>
+                                <Border Classes="role" HorizontalAlignment="Center">
+                                    <TextBlock Text="开发者" FontSize="10" Foreground="#0067C0"/>
+                                </Border>
                             </StackPanel>
 
                             <!-- deepseek -->
-                            <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <Border Width="72" Height="72"
-                                        CornerRadius="36"
-                                        ClipToBounds="True"
-                                        HorizontalAlignment="Center"
-                                        Cursor="Hand"
-                                        PointerPressed="DeepseekAvatar_PointerPressed">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" Width="96">
+                                <Border Classes="avatar" Width="72" Height="72" CornerRadius="36"
+                                        ClipToBounds="True" HorizontalAlignment="Center"
+                                        Cursor="Hand" PointerPressed="DeepseekAvatar_PointerPressed">
                                     <Image x:Name="DeepImage" Stretch="UniformToFill"/>
                                 </Border>
-                                <TextBlock Text="deepseek"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
+                                <TextBlock Text="deepseek" FontSize="13" FontWeight="SemiBold"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="蓝色大肥鱼"
-                                           FontSize="11"
-                                           Opacity="0.55"
-                                           HorizontalAlignment="Center"/>
+                                <Border Classes="role" HorizontalAlignment="Center">
+                                    <TextBlock Text="蓝色大肥鱼" FontSize="10" Foreground="#0067C0"/>
+                                </Border>
                             </StackPanel>
 
                             <!-- shinecy -->
-                            <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <Border Width="72" Height="72"
-                                        CornerRadius="36"
-                                        ClipToBounds="True"
-                                        HorizontalAlignment="Center">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" Width="96">
+                                <Border Classes="avatar" Width="72" Height="72" CornerRadius="36"
+                                        ClipToBounds="True" HorizontalAlignment="Center">
                                     <Image x:Name="ShinecyImage" Stretch="UniformToFill"/>
                                 </Border>
-                                <TextBlock Text="shinecy"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
+                                <TextBlock Text="shinecy" FontSize="13" FontWeight="SemiBold"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="股东"
-                                           FontSize="11"
-                                           Opacity="0.55"
-                                           HorizontalAlignment="Center"/>
+                                <Border Classes="role" HorizontalAlignment="Center">
+                                    <TextBlock Text="股东" FontSize="10" Foreground="#0067C0"/>
+                                </Border>
                             </StackPanel>
                         </StackPanel>
 
                         <!-- 彩蛋：气泡 + 白饭 -->
                         <Canvas x:Name="EggCanvas" IsHitTestVisible="False">
                             <Border x:Name="RiceBubble"
-                                    Background="#EE2D2D2D"
-                                    CornerRadius="10"
-                                    Padding="10,6"
-                                    Opacity="0">
-                                <TextBlock Text="我要吃白饭"
-                                           FontSize="12"
-                                           Foreground="White"/>
+                                    Background="#EE2D2D2D" CornerRadius="10" Padding="10,6" Opacity="0">
+                                <TextBlock Text="我要吃白饭" FontSize="12" Foreground="White"/>
                             </Border>
-                            <TextBlock x:Name="RiceBowl"
-                                       Text="🍚"
-                                       FontSize="30"
-                                       Opacity="0"/>
+                            <TextBlock x:Name="RiceBowl" Text="🍚" FontSize="30" Opacity="0"/>
                         </Canvas>
                     </Grid>
-
-                    <TextBlock Name="LineAuthor"
-                               Text="Vael 项目组制作"
-                               FontSize="12"
-                               Opacity="0.65"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Name="LineTeam"
-                               Text="tianjing &amp; deepseek"
-                               FontSize="11"
-                               Opacity="0.5"
-                               HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
             <!-- ============ 链接 ============ -->
-            <StackPanel Orientation="Horizontal"
-                        Spacing="10"
-                        HorizontalAlignment="Center"
-                        Margin="0,4,0,0"
-                        Opacity="0"
-                        x:Name="ButtonRow">
-
-                <Button Name="GitHubButton"
-                        Content="github.com/TIANJING-qwq/Vael"
-                        FontSize="12"
-                        Padding="14,7"
-                        HorizontalAlignment="Center"
-                        Background="Transparent"
-                        BorderBrush="#0067c0"
-                        BorderThickness="1"
-                        CornerRadius="16"
-                        Foreground="#0067c0"
-                        Cursor="Hand"
-                        Click="GitHubButton_Click" />
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center"
+                        Margin="0,2,0,0" Opacity="0" x:Name="ButtonRow">
+                <Button Name="GitHubButton" Content="github.com/TIANJING-qwq/Vael"
+                        FontSize="12" Padding="16,8"
+                        Background="#0067C0" Foreground="White" BorderThickness="0"
+                        CornerRadius="18" Cursor="Hand" Click="GitHubButton_Click"/>
             </StackPanel>
 
-            <TextBlock Name="UpdateStatusText"
-                       Text=""
-                       FontSize="11"
-                       HorizontalAlignment="Center"
-                       Margin="0,2,0,0"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       MaxWidth="420"
-                       Opacity="0" />
+            <TextBlock Name="UpdateStatusText" Text="" FontSize="11"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"
+                       TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" Opacity="0"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
