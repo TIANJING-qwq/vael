@@ -94,9 +94,10 @@ uniform float strength;   // 折射强度（边缘位移 px）
 uniform float band;       // 边缘带宽 px
 uniform float4 tint;      // 轻染色
 
-float sdRoundedRect(float2 p, float2 half_, float r) {
-    float2 q = abs(p - half_) - (half_ - r);
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+float sdEdge(float dist, float band) {
+    // SKSL 无 smoothstep：手工等价实现 t*t*(3-2t)
+    float t = clamp(dist / band, 0.0, 1.0);
+    return 1.0 - (t * t * (3.0 - 2.0 * t));
 }
 
 float4 main(float2 p) {
@@ -106,7 +107,7 @@ float4 main(float2 p) {
     float2 diff = p - c;
     float dist = length(diff);
     float2 n = dist > 0.0001 ? diff / dist : float2(0.0);
-    float edge = 1.0 - smoothstep(0.0, band, dist);  // 1=贴边
+    float edge = sdEdge(dist, band);  // 1=贴边
 
     // ★ 真折射：边缘处采样点向内拉（背景在玻璃边缘真实弯曲）
     float2 sp = p - n * strength * edge;
@@ -130,8 +131,20 @@ float4 main(float2 p) {
 ";
 
     private static SKRuntimeEffect? _effect;
-    private static SKRuntimeEffect Effect => _effect ??= SKRuntimeEffect.Create(Sksl, out var err)
-        ?? throw new InvalidOperationException("SKSL 编译失败: " + err);
+    private static bool _effectTried;
+    private static SKRuntimeEffect? Effect
+    {
+        get
+        {
+            if (_effectTried) return _effect;
+            _effectTried = true;
+            var eff = SKRuntimeEffect.Create(Sksl, out var err);
+            if (eff == null)
+                Logger.TryGet(LogEventLevel.Warning, "LiquidGlass")?
+                    .Log("LiquidGlass", null, "SKSL 编译失败（回退磨砂）: " + err);
+            return _effect = eff;
+        }
+    }
 
     public static readonly StyledProperty<float> CornerRadiusProperty =
         AvaloniaProperty.Register<LiquidGlass, float>(nameof(CornerRadius), 16f);
@@ -216,6 +229,15 @@ float4 main(float2 p) {
             var size = _owner.Bounds.Size;
             var local = SKMatrix.CreateScaleTranslation(sx, sy, tx, ty);
             using var contentShader = _wallBlurred!.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, local);
+
+            if (Effect == null)
+            {
+                // 着色器不可用：回退为直接磨砂底（三级降级第二级），不在渲染循环抛异常
+                using var p2 = new SKPaint { Shader = contentShader, IsAntialias = true };
+                canvas.DrawRoundRect(0, 0, (float)size.Width, (float)size.Height,
+                    _owner.CornerRadius, _owner.CornerRadius, p2);
+                return;
+            }
 
             var uniforms = new SKRuntimeEffectUniforms(Effect)
             {
