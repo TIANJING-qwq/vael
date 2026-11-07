@@ -345,35 +345,16 @@ public class DockWindow : Window
         }
         catch { }
 
-        _card.Background = new SolidColorBrush(Color.Parse(m.CardHex));
+        _card.Background = m.Gloss
+            ? null // 真液态玻璃：底由折射着色器绘制
+            : new SolidColorBrush(Color.Parse(m.CardHex));
         _card.BorderBrush = Brush.Parse(m.Gloss ? "#59FFFFFF" : "#26FFFFFF");
         _card.BorderThickness = new Thickness(1);
-        // 玻璃分层：顶部高光 + 顶缘亮线 + 底部微反射
         if (m.Gloss)
         {
-            _card.Child = new Grid
-            {
-                Children =
-                {
-                    new Border
-                    {
-                        Background = new LinearGradientBrush
-                        {
-                            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-                            GradientStops =
-                            {
-                                new GradientStop(Color.Parse("#24FFFFFF"), 0),
-                                new GradientStop(Color.Parse("#00FFFFFF"), 0.35),
-                                new GradientStop(Color.Parse("#00FFFFFF"), 0.85),
-                                new GradientStop(Color.Parse("#10FFFFFF"), 1),
-                            },
-                        },
-                    },
-                    _strip,
-                    new Border { Height = 1, VerticalAlignment = VerticalAlignment.Top, Background = Brush.Parse("#3DFFFFFF") },
-                },
-            };
+            // ★ 真折射液态玻璃：采样壁纸 + SKSL 边缘弯曲 + RGB 色散（LiquidGlassUI 路数）
+            var glass = new Controls.LiquidGlass { CornerRadius = 18, Child = _strip };
+            _card.Child = glass;
         }
         else _card.Child = _strip;
     }
