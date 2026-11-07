@@ -185,7 +185,17 @@ float4 main(float2 p) {
     public override void Render(DrawingContext context)
     {
         if (Bounds.Width > 4 && Bounds.Height > 4 && _wallBlurred != null)
-            context.Custom(new GlassOp(this));
+        {
+            // ★ UI 线程侧捕获全部参数：Render 在合成器线程执行，不可碰 AvaloniaObject
+            var win = VisualRoot as Window;
+            context.Custom(new GlassOp(
+                new Rect(Bounds.Size),
+                CornerRadius,
+                Strength,
+                win?.Position ?? default,
+                (float)(win?.RenderScaling ?? 1.0),
+                win?.Screens.Primary?.Bounds ?? default));
+        }
         else
         {
             // 壁纸未就绪：轻磨砂底（降级，不静默失败）
@@ -197,10 +207,18 @@ float4 main(float2 p) {
 
     private sealed class GlassOp : ICustomDrawOperation
     {
-        private readonly LiquidGlass _owner;
-        public GlassOp(LiquidGlass owner) => _owner = owner;
+        private readonly Rect _bounds;
+        private readonly float _radius, _strength, _scale;
+        private readonly PixelPoint _pos;
+        private readonly PixelRect _screen;
 
-        public Rect Bounds => _owner.Bounds;
+        public GlassOp(Rect bounds, float radius, float strength, PixelPoint pos, float scale, PixelRect screen)
+        {
+            _bounds = bounds; _radius = radius; _strength = strength;
+            _pos = pos; _scale = scale; _screen = screen;
+        }
+
+        public Rect Bounds => _bounds;
 
         public void Dispose() { }
 
@@ -214,19 +232,17 @@ float4 main(float2 p) {
             using var lease = leaseFeature.Lease();
             var canvas = lease.SkCanvas;
 
-            var win = _owner.VisualRoot as Window;
-            var scale = (float)(win?.RenderScaling ?? 1.0);
-            var pos = win?.Position ?? default;
-            var screen = win?.Screens.Primary?.Bounds;
             var wall = _wallBlurred!;
+            var scale = _scale;
+            var pos = _pos;
 
             // local px → 壁纸像素：壁纸铺满主屏（物理像素）
-            float sx = screen is { } s && s.Width > 0 ? wall.Width / (float)s.Width * scale : scale;
-            float sy = screen is { } s2 && s2.Height > 0 ? wall.Height / (float)s2.Height * scale : scale;
-            float tx = pos.X - (screen?.X ?? 0) * (sx / scale);
-            float ty = pos.Y - (screen?.Y ?? 0) * (sy / scale);
+            float sx = _screen.Width > 0 ? wall.Width / (float)_screen.Width * scale : scale;
+            float sy = _screen.Height > 0 ? wall.Height / (float)_screen.Height * scale : scale;
+            float tx = pos.X - _screen.X * (sx / scale);
+            float ty = pos.Y - _screen.Y * (sy / scale);
 
-            var size = _owner.Bounds.Size;
+            var size = _bounds.Size;
             var local = SKMatrix.CreateScaleTranslation(sx, sy, tx, ty);
             using var contentShader = _wallBlurred!.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, local);
 
@@ -235,15 +251,15 @@ float4 main(float2 p) {
                 // 着色器不可用：回退为直接磨砂底（三级降级第二级），不在渲染循环抛异常
                 using var p2 = new SKPaint { Shader = contentShader, IsAntialias = true };
                 canvas.DrawRoundRect(0, 0, (float)size.Width, (float)size.Height,
-                    _owner.CornerRadius, _owner.CornerRadius, p2);
+                    _radius, _radius, p2);
                 return;
             }
 
             var uniforms = new SKRuntimeEffectUniforms(Effect)
             {
                 ["size"] = new[] { (float)size.Width, (float)size.Height },
-                ["radius"] = _owner.CornerRadius,
-                ["strength"] = _owner.Strength,
+                ["radius"] = _radius,
+                ["strength"] = _strength,
                 ["band"] = 20f,
                 ["tint"] = new[] { 0.16f, 0.17f, 0.2f, 0.10f },
             };
