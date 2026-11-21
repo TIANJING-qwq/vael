@@ -181,6 +181,14 @@ public sealed class UpdateService
         return result;
     }
 
+    /// <summary>安装器命令行：静默级别 + 就地覆盖当前程序目录（便携版关键）</summary>
+    private static string BuildSetupArgs(bool silentInstall)
+    {
+        var mode = silentInstall ? "/VERYSILENT" : "/SILENT";
+        var dir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        return $"{mode} /NORESTART /SUPPRESSMSGBOXES /DIR=\"{dir}\"";
+    }
+
     /// <summary>更新器重启参数文件（安装器 [Code] 读取后拉起程序）</summary>
     public static string RelaunchArgsFile => Path.Combine(ConfigManager.AppDataDir, "relaunch_args.txt");
 
@@ -270,8 +278,9 @@ public sealed class UpdateService
 
             WriteRelaunchArgs(); // 保留当前启动模式（开机静默 → 更新后仍静默）
             LogService.Log($"安装包就绪: {setupPath}，启动更新器（带进度条，装完自动重启）", "更新");
-            Process.Start(new ProcessStartInfo(setupPath, "/SILENT /NORESTART /SUPPRESSMSGBOXES")
-            { UseShellExecute = true });
+            var psi = new ProcessStartInfo(setupPath) { UseShellExecute = true };
+            psi.Arguments = BuildSetupArgs(silentInstall: false);
+            Process.Start(psi);
             await Task.Delay(1000);
             Environment.Exit(0);
             return true;
@@ -349,11 +358,12 @@ public sealed class UpdateService
 
                     try { DownloadCompleted?.Invoke(true); } catch { }
                     // silentInstall=true：/VERYSILENT 全后台无窗口；否则 /SILENT 显示进度条
-                    var flags = silentInstall
-                        ? "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES"
-                        : "/SILENT /NORESTART /SUPPRESSMSGBOXES";
-                    LogService.Log($"启动安装器（{flags}）", "更新");
-                    Process.Start(new ProcessStartInfo(setupPath, flags) { UseShellExecute = true });
+                    // ★ /DIR=当前程序目录：便携版（如 K:\Vael）更新时就地覆盖，
+                    //   否则 Inno 会默认装到 %LocalAppData%\Programs\Vael 变成两份
+                    var psi = new ProcessStartInfo(setupPath) { UseShellExecute = true };
+                    psi.Arguments = BuildSetupArgs(silentInstall);
+                    LogService.Log($"启动安装器（{psi.Arguments}）", "更新");
+                    Process.Start(psi);
                     await Task.Delay(1200);
                     Environment.Exit(0);
                     return true;
