@@ -467,36 +467,18 @@ public partial class AboutView : UserControl
             var progress = new UpdateDownloadDialog();
             progress.Show(owner);
 
-            bool downloaded = await UpdateService.Instance.DownloadAsync();
+            // Windows 下下载完成即由安装器接管并自动重启；其它平台只能手动
+            bool downloaded = await UpdateService.Instance.DownloadAsync(silentInstall: false);
             try { await progress.CloseWithAnimationAsync(); } catch { }
 
             if (!downloaded)
             {
-                UpdateStatusText.Text = "下载失败";
+                UpdateStatusText.Text = $"下载失败：{UpdateService.Instance.LastError}";
                 MainWindow.PushToast("更新失败", UpdateService.Instance.LastError ?? "下载失败，请稍后重试。");
                 return;
             }
-
-            if (ConfigManager.Instance.AutoInstallUpdate)
-            {
-                UpdateStatusText.Text = "正在安装更新...";
-                await MainWindow.InstallWithProgressAsync();
-            }
-            else
-            {
-                var installDialog = new UpdateAvailableDialog(
-                    version, "新版本已下载完成，是否立即安装？", "安装更新", "立即安装");
-                if (owner != null && await installDialog.ShowDialog<bool>(owner))
-                {
-                    UpdateStatusText.Text = "正在安装更新...";
-                    await MainWindow.InstallWithProgressAsync();
-                }
-                else
-                {
-                    UpdateStatusText.Text = "已下载，未安装";
-                    MainWindow.PushToast("更新已下载", "稍后会再次提示安装。");
-                }
-            }
+            if (OperatingSystem.IsWindows()) return; // 安装器接管中
+            UpdateStatusText.Text = "已下载，当前平台请手动安装";
         }
         catch (Exception ex)
         {

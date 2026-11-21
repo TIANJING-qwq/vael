@@ -185,7 +185,20 @@ public partial class UpdateView : UserControl
             }
 
             StatusText.Text = $"发现新版本 {UpdateService.Instance.LatestVersion}，开始下载…";
-            MainWindow.InstallWithProgressAsync();
+            // ★ 旧 bug：这里只调 InstallAsync（不下载任何东西），Windows 上永远"没反应"。
+            //   正确流程：下载安装包（带进度显示），Windows 下下载完由安装器接管并自动重启。
+            void OnProgress(int p) => StatusText.Text = $"下载中… {p}%";
+            UpdateService.Instance.DownloadProgressChanged += OnProgress;
+            try
+            {
+                var ok = await UpdateService.Instance.DownloadAsync(silentInstall: false);
+                if (!ok)
+                    StatusText.Text = $"更新失败：{UpdateService.Instance.LastError ?? "未知错误"}";
+                else if (!OperatingSystem.IsWindows())
+                    StatusText.Text = "当前平台请到发布页手动安装";
+                // Windows：安装器已启动，进程即将退出
+            }
+            finally { UpdateService.Instance.DownloadProgressChanged -= OnProgress; }
         }
         catch (Exception ex)
         {
