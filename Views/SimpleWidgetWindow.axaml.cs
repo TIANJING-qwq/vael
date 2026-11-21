@@ -4,8 +4,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
@@ -61,6 +63,15 @@ public partial class SimpleWidgetWindow : Window
         }
     }
     private static readonly List<SimpleWidgetWindow> _all = new();
+
+    /// <summary>触摸屏支持：触摸/触控笔等同左键（触摸设备没有"左键按下"状态）</summary>
+    private static bool IsLeftLike(PointerEventArgs e) =>
+        e.GetCurrentPoint(null).Properties.IsLeftButtonPressed ||
+        e.Pointer.Type is Avalonia.Input.PointerType.Touch or Avalonia.Input.PointerType.Pen;
+
+    private static bool IsLeftLikeAt(Visual v, PointerEventArgs e) =>
+        e.GetCurrentPoint(v).Properties.IsLeftButtonPressed ||
+        e.Pointer.Type is Avalonia.Input.PointerType.Touch or Avalonia.Input.PointerType.Pen;
 
     private readonly Kind _kind;
     private readonly Config _cfg;
@@ -130,14 +141,14 @@ public partial class SimpleWidgetWindow : Window
         Grid.SetColumn(close, 2);
         close.Click += (_, _) => Close();
         head.Children.Add(close);
-        head.PointerPressed += (_, e) => { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e); };
+        head.PointerPressed += (_, e) => { if (IsLeftLikeAt(this, e)) BeginMoveDrag(e); };
         panel.Children.Add(head);
 
         switch (kind)
         {
             case Kind.Gallery:
                 _img = new Image { Stretch = Stretch.Uniform, MaxHeight = 165 };
-                _img.PointerPressed += (_, e) => { if (e.GetCurrentPoint(_img).Properties.IsLeftButtonPressed) { Shuffle(); e.Handled = true; } };
+                _img.PointerPressed += (_, e) => { if (IsLeftLikeAt(_img, e)) { Shuffle(); e.Handled = true; } };
                 panel.Children.Add(_img);
                 TryLoadImages();
                 break;
@@ -153,7 +164,6 @@ public partial class SimpleWidgetWindow : Window
             case Kind.Perf:
                 _big.Text = "CPU  --";
                 _sub.Text = "内存 -- · 网速 --";
-                _big.PointerPressed += (_, e) => { e.Handled = true; }; // 点击不换内容，仅拖动用
                 panel.Children.Add(_big);
                 InitPerf();
                 break;
@@ -163,7 +173,7 @@ public partial class SimpleWidgetWindow : Window
                 panel.Children.Add(_graph);
                 break;
             default:
-                _big.PointerPressed += (_, e) => { if (e.GetCurrentPoint(_big).Properties.IsLeftButtonPressed) { Action(); e.Handled = true; } };
+                _big.PointerPressed += (_, e) => { if (IsLeftLikeAt(_big, e)) { Action(); e.Handled = true; } };
                 panel.Children.Add(_big);
                 break;
         }
@@ -179,13 +189,13 @@ public partial class SimpleWidgetWindow : Window
         Content = _card;
         ApplyMaterial();
 
-        // 窗体：左键空白=拖动 / 中键=涩图上一张 / 右键=配置（控件自身动作已 Handled，不会到这）
+        // 窗体：左键/触摸空白=拖动 / 中键=涩图上一张 / 右键=配置（控件自身动作已 Handled，不会到这）
         PointerPressed += (_, e) =>
         {
             var pt = e.GetCurrentPoint(this);
             if (pt.Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
             else if (pt.Properties.IsMiddleButtonPressed) { Prev(); e.Handled = true; }
-            else if (pt.Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+            else if (IsLeftLikeAt(this, e)) BeginMoveDrag(e);
         };
 
         _all.Add(this);
@@ -382,6 +392,9 @@ public partial class SimpleWidgetWindow : Window
 
     /// <summary>某类小组件是否已开</summary>
     public static bool HasOpen(Kind k) => _all.Any(w => w._kind == k);
+
+    /// <summary>当前打开的小组件数量（启动恢复日志用）</summary>
+    public static int OpenCount => _all.Count;
 
     private static Avalonia.Threading.DispatcherTimer? _autoSave;
 

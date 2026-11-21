@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -168,8 +169,9 @@ public class DockWindow : Window
         PointerPressed += (_, e) =>
         {
             var pt = e.GetCurrentPoint(this);
+            var isTouch = e.Pointer.Type is PointerType.Touch or PointerType.Pen;
             if (pt.Properties.IsRightButtonPressed) { OpenConfig(); e.Handled = true; }
-            else if (pt.Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+            else if (pt.Properties.IsLeftButtonPressed || isTouch) BeginMoveDrag(e); // 触摸屏可拖动
         };
         PointerMoved += (_, e) => _mouseX = e.GetPosition(_strip).X;
         PointerExited += (_, _) => _mouseX = double.NaN;

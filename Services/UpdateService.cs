@@ -171,6 +171,28 @@ public sealed class UpdateService
         return result;
     }
 
+    /// <summary>更新器重启参数文件（安装器 [Code] 读取后拉起程序）</summary>
+    public static string RelaunchArgsFile => Path.Combine(ConfigManager.AppDataDir, "relaunch_args.txt");
+
+    /// <summary>
+    /// 记录"更新完成后用什么参数重启"：
+    /// 本次是开机自启（--autostart）→ 重启后仍然静默，不再弹主窗口。
+    /// </summary>
+    private static void WriteRelaunchArgs()
+    {
+        try
+        {
+            var args = Environment.GetCommandLineArgs();
+            var relaunch = args.Any(a => a.Equals("--autostart", StringComparison.OrdinalIgnoreCase))
+                ? "--autostart"
+                : "";
+            Directory.CreateDirectory(ConfigManager.AppDataDir);
+            File.WriteAllText(RelaunchArgsFile, relaunch);
+            LogService.Log($"更新重启模式已记录: [{(string.IsNullOrEmpty(relaunch) ? "正常显示" : relaunch)}]", "更新");
+        }
+        catch { }
+    }
+
     /// <summary>更新流程进行中（检查/下载/安装互斥，防自动检查与下载并发打架）</summary>
     public bool Busy { get; private set; }
 
@@ -219,11 +241,24 @@ public sealed class UpdateService
             }
             LogService.Log($"强制测试更新：{assetName}（{tagName}）", "更新");
 
-            var setupPath = Path.Combine(Path.GetTempPath(), "Vael_Setup.exe");
+            var setupPath = Path.Combine(ConfigManager.AppDataDir, "updates", assetName ?? "Vael_Setup.exe");
+            try { Directory.CreateDirectory(Path.GetDirectoryName(setupPath)!); } catch { }
             try { File.Delete(setupPath); } catch { }
             await DownloadFileAsync((ConfigManager.Instance.UpdateProxy ?? "") + dl,
                 setupPath, CancellationToken.None);
 
+            var len = 0L;
+            try { len = new FileInfo(setupPath).Length; } catch { }
+            if (len < 5 * 1024 * 1024)
+            {
+                LastError = $"安装包下载不完整（{len / 1024} KB），已中止";
+                LogService.Log(LastError, "更新");
+                try { File.Delete(setupPath); } catch { }
+                return false;
+            }
+            try { File.Delete(setupPath + ":Zone.Identifier"); } catch { }
+
+            WriteRelaunchArgs(); // 保留当前启动模式（开机静默 → 更新后仍静默）
             LogService.Log($"安装包就绪: {setupPath}，启动更新器（带进度条，装完自动重启）", "更新");
             Process.Start(new ProcessStartInfo(setupPath, "/SILENT /NORESTART /SUPPRESSMSGBOXES")
             { UseShellExecute = true });
@@ -241,9 +276,10 @@ public sealed class UpdateService
     }
 
     // ============================================================
-    // ★ 下载：ZIP → 解压 → 展平 → 暂存到 pending_update
+    // ★ 下载：Windows 直接拉安装包并静默升级（全后台可选）
     // ============================================================
-    public async Task<bool> DownloadAsync()
+    /// <param name="silentInstall">true=全后台（/VERYSILENT，无任何窗口）；false=显示安装进度条（/SILENT）</param>
+    public async Task<bool> DownloadAsync(bool silentInstall = false)
     {
         if (Busy) return false;
         Busy = true;
@@ -275,23 +311,40 @@ public sealed class UpdateService
                 if (setup != null)
                 {
                     LogService.Log($"已选择安装包资产: {setup.Name}", "更新");
-                    // ★ 减敏：固定文件名（随机名可执行文件是启发式恶意评分项）
-                    //   + 放 %TEMP% 而非 AppData\Roaming（AppData 落 exe 是高危特征）
-                    var setupPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
-                        "Vael_Setup.exe");
-                    try { System.IO.File.Delete(setupPath); } catch { }
+                    var setupPath = Path.Combine(ConfigManager.AppDataDir, "updates", setup.Name);
+                    try { Directory.CreateDirectory(Path.GetDirectoryName(setupPath)!); } catch { }
+                    try { File.Delete(setupPath); } catch { }
 
                     await DownloadFileAsync(
                         (ConfigManager.Instance.UpdateProxy ?? "") + setup.BrowserDownloadUrl,
                         setupPath, token);
-                    LogService.Log($"安装包下载完成: {setupPath}，启动静默升级", "更新");
+
+                    // ★ 完整性校验：远端返回 HTML/0 字节时绝不能当安装包执行
+                    var len = 0L;
+                    try { len = new FileInfo(setupPath).Length; } catch { }
+                    if (len < 5 * 1024 * 1024)
+                    {
+                        LastError = $"安装包下载不完整（{len / 1024} KB），已中止";
+                        LogService.Log(LastError, "更新");
+                        try { File.Delete(setupPath); } catch { }
+                        DownloadCompleted?.Invoke(false);
+                        return false;
+                    }
+                    // 去掉 MOTW 标记，避免"来自 Internet 的文件"二次拦截
+                    try { File.Delete(setupPath + ":Zone.Identifier"); } catch { }
+                    LogService.Log($"安装包下载完成: {setupPath}（{len / 1024 / 1024} MB）", "更新");
+
+                    // ★ 记录重启模式：开机静默启动的实例，更新重启后仍保持静默（不弹主窗口）
+                    WriteRelaunchArgs();
 
                     try { DownloadCompleted?.Invoke(true); } catch { }
-                    // ★ /SILENT：显示安装进度条（更新器窗口），装完由 installer [Code] 自动重启程序
-                    Process.Start(new ProcessStartInfo(setupPath,
-                        "/SILENT /NORESTART /SUPPRESSMSGBOXES")
-                    { UseShellExecute = true });
-                    await Task.Delay(1000);
+                    // silentInstall=true：/VERYSILENT 全后台无窗口；否则 /SILENT 显示进度条
+                    var flags = silentInstall
+                        ? "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES"
+                        : "/SILENT /NORESTART /SUPPRESSMSGBOXES";
+                    LogService.Log($"启动安装器（{flags}）", "更新");
+                    Process.Start(new ProcessStartInfo(setupPath, flags) { UseShellExecute = true });
+                    await Task.Delay(1200);
                     Environment.Exit(0);
                     return true;
                 }
@@ -302,117 +355,12 @@ public sealed class UpdateService
                 return false;
             }
 
-            // ★ 按平台挑选对应资产（不能再取第一个 zip，否则会拿到别的平台包）
-            var rid = CurrentRuntimeId();
-            var asset = release.Assets.FirstOrDefault(a =>
-                            a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                            a.Name.Contains(rid, StringComparison.OrdinalIgnoreCase))
-                        ?? release.Assets.FirstOrDefault(a =>
-                            a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                            a.Name.Contains(PlatformInfo.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (asset == null)
-            {
-                LastError = $"Release 里没有匹配当前平台（{rid}）的 .zip 资产";
-                LogService.Log(LastError, "更新");
-                DownloadCompleted?.Invoke(false);
-                return false;
-            }
-
-            LogService.Log($"已选择资产: {asset.Name}（当前平台 {rid}）", "更新");
-
-            var originalUrl = asset.BrowserDownloadUrl;
-            var proxy = ConfigManager.Instance.UpdateProxy ?? "";
-            var downloadUrl = string.IsNullOrWhiteSpace(proxy)
-                ? originalUrl
-                : proxy + originalUrl;
-
-            LogService.Log($"下载地址: {downloadUrl}", "更新");
-
-            // 1. 下载 ZIP 到数据目录（受限环境自动回退到可写位置）
-            var zipPath = Path.Combine(
-                ConfigManager.AppDataDir,
-                $"Vael_update_{Guid.NewGuid():N}.zip");
-
-            await DownloadFileAsync(downloadUrl, zipPath, token);
-            LogService.Log($"下载完成: {zipPath}", "更新");
-
-            // 2. 解压到 AppData 下的临时目录（与 pending_update 同盘，便于 rename）
-            Directory.CreateDirectory(ConfigManager.AppDataDir);
-            var extractDir = Path.Combine(
-                ConfigManager.AppDataDir,
-                $".update_tmp_{Guid.NewGuid():N}");
-
-            try
-            {
-                if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
-                ZipFile.ExtractToDirectory(zipPath, extractDir);
-                LogService.Log($"解压完成: {extractDir}", "更新");
-                try { File.Delete(zipPath); } catch { }
-            }
-            catch (Exception ex)
-            {
-                LastError = $"解压失败: {ex.Message}";
-                LogService.Log(LastError, "更新");
-                DownloadCompleted?.Invoke(false);
-                return false;
-            }
-
-            // 3. 找到新的主程序（Windows 为 SBtools.exe；其它平台是无扩展名的可执行文件）
-            var exeName = OperatingSystem.IsWindows() ? "SBtools.exe" : "SBtools";
-            var newExe = Path.Combine(extractDir, exeName);
-            if (!File.Exists(newExe))
-            {
-                newExe = Directory.GetFiles(extractDir, exeName, SearchOption.AllDirectories)
-                    .FirstOrDefault() ?? "";
-            }
-
-            if (string.IsNullOrEmpty(newExe) || !File.Exists(newExe))
-            {
-                LastError = $"ZIP 里没有主程序 {exeName}（平台不匹配？当前 {CurrentRuntimeId()}）";
-                LogService.Log(LastError, "更新");
-
-                // 清理这次解压出来的垃圾，避免残留占空间
-                try { Directory.Delete(extractDir, true); } catch { }
-
-                DownloadCompleted?.Invoke(false);
-                return false;
-            }
-
-            // 若 exe 在子目录，把子目录内容整体上提到顶层
-            var newExeDir = Path.GetDirectoryName(newExe)!;
-            if (!newExeDir.Equals(extractDir, StringComparison.OrdinalIgnoreCase))
-            {
-                LogService.Log($"exe 位于子目录 {newExeDir}，正在展平...", "更新");
-
-                foreach (var file in Directory.GetFiles(newExeDir, "*", SearchOption.AllDirectories))
-                {
-                    var rel = Path.GetRelativePath(newExeDir, file);
-                    var dst = Path.Combine(extractDir, rel);
-                    Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
-                    File.Move(file, dst, true);
-                }
-
-                try { Directory.Delete(newExeDir, true); } catch { }
-            }
-
-            // 4. 暂存到 pending_update（原子 rename，避免临时目录被清理）
-            try
-            {
-                if (Directory.Exists(PendingDir)) Directory.Delete(PendingDir, true);
-                Directory.Move(extractDir, PendingDir);
-                LogService.Log($"更新已暂存到: {PendingDir}", "更新");
-            }
-            catch (Exception ex)
-            {
-                LastError = $"暂存更新失败: {ex.Message}";
-                LogService.Log(LastError, "更新");
-                DownloadCompleted?.Invoke(false);
-                return false;
-            }
-
-            DownloadCompleted?.Invoke(true);
-            return true;
+            // ★ 非 Windows：不做"解压 ZIP + 替换 DLL"（旧方案既误报又不可靠），
+            //   直接提示到发布页手动下载。整段 ZIP/pending_update 死代码已删除。
+            LastError = $"当前平台（{CurrentRuntimeId()}）不支持自动升级，请到 GitHub Releases 手动下载";
+            LogService.Log(LastError, "更新");
+            DownloadCompleted?.Invoke(false);
+            return false;
         }
         catch (OperationCanceledException)
         {
@@ -438,81 +386,35 @@ public sealed class UpdateService
     }
 
     // ============================================================
-    // ★ 安装：从 pending_update 生成替换脚本 → 退出主程序
+    // ★ 安装：Windows 由安装包接管（DownloadAsync 里已启动并退出）；
+    //   其余平台不支持自动替换，明确报错。旧版"bat + xcopy + taskkill"
+    //   替换脚本已整体删除（死代码，且是杀软启发式误报的字符串特征）。
     // ============================================================
-    public async Task<bool> InstallAsync(IProgress<double>? progress = null)
+    public Task<bool> InstallAsync(IProgress<double>? progress = null)
     {
         try
         {
-            LogService.Log("开始安装更新...", "更新");
-
-            // 安装包路径已接管（下载完直接静默安装并退出），这里无事可做
-            if (Busy) { LogService.Log("安装包流程已接管，跳过", "更新"); return true; }
-            Busy = true;
-            progress?.Report(0.10);
-
-            if (!HasPendingUpdate)
+            progress?.Report(0.1);
+            if (HasPendingUpdate)
             {
-                LogService.Log("没有可安装的更新", "更新");
-                InstallCompleted?.Invoke(false);
-                return false;
-            }
-            progress?.Report(0.25);
-
-            // 当前程序目录
-            var currentExe = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(currentExe))
-                currentExe = Path.Combine(AppContext.BaseDirectory, PendingExeName);
-
-            var targetDir = Path.GetDirectoryName(currentExe)!;
-            LogService.Log($"更新目标目录: {targetDir}", "更新");
-
-            // ★ 非 Windows 没有 cmd/bat 替换脚本，只能提示手动更新
-            if (!OperatingSystem.IsWindows())
-            {
-                LastError = $"当前平台（{CurrentRuntimeId()}）不支持自动安装更新，请手动下载新版本覆盖";
+                LastError = "更新包已就绪，但当前平台不支持自动替换，请手动安装";
                 LogService.Log(LastError, "更新");
-                InstallCompleted?.Invoke(false);
-                return false;
             }
-
-            var batPath = Path.Combine(Path.GetTempPath(),
-                $"Vael_update_{Guid.NewGuid():N}.bat");
-
-            var batContent = BuildUpdateScript(
-                PendingDir, targetDir, currentExe, "");
-            File.WriteAllText(batPath, batContent, Encoding.ASCII);
-            progress?.Report(0.55);
-
-            LogService.Log($"替换脚本已生成: {batPath}", "更新");
-
-            var psi = new ProcessStartInfo
+            else
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"\"{batPath}\"\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-            };
-
-            Process.Start(psi);
-            progress?.Report(0.85);
-            LogService.Log("更新脚本已启动，准备退出主程序", "更新");
-
-            InstallCompleted?.Invoke(true);
-
-            await Task.Delay(700);
-            progress?.Report(1.0);
-            await Task.Delay(400);
-            Environment.Exit(0);
-
-            return true;
+                LastError = OperatingSystem.IsWindows()
+                    ? "Windows 更新由安装包直接完成，无需二次安装"
+                    : "没有可安装的更新";
+                LogService.Log(LastError, "更新");
+            }
+            InstallCompleted?.Invoke(false);
+            return Task.FromResult(false);
         }
         catch (Exception ex)
         {
             LogService.Log($"安装失败: {ex.Message}", "更新");
             InstallCompleted?.Invoke(false);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -521,51 +423,6 @@ public sealed class UpdateService
     {
         if (!await DownloadAsync()) return false;
         return await InstallAsync();
-    }
-
-    // ============================================================
-    // 生成替换脚本
-    // ============================================================
-    private static string BuildUpdateScript(
-        string sourceDir, string targetDir, string exePath, string zipPath)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine("@echo off");
-        sb.AppendLine("chcp 65001 >nul 2>&1");
-        sb.AppendLine("setlocal");
-        sb.AppendLine("title Vael Update");
-        sb.AppendLine("");
-        sb.AppendLine("echo Waiting for SBtools.exe to exit...");
-        sb.AppendLine("");
-        sb.AppendLine(":wait_loop");
-        sb.AppendLine("tasklist /FI \"IMAGENAME eq SBtools.exe\" 2>nul | find /I \"SBtools.exe\" >nul");
-        sb.AppendLine("if not errorlevel 1 (");
-        sb.AppendLine($"    {S.TKill} /F /IM SBtools.exe >nul 2>&1");
-        sb.AppendLine("    timeout /t 1 /nobreak >nul");
-        sb.AppendLine("    goto wait_loop");
-        sb.AppendLine(")");
-        sb.AppendLine("");
-        sb.AppendLine("timeout /t 1 /nobreak >nul");
-        sb.AppendLine("");
-        sb.AppendLine($"echo Copying files from: \"{sourceDir}\"");
-        sb.AppendLine($"echo To: \"{targetDir}\"");
-        sb.AppendLine("");
-        sb.AppendLine($"xcopy /Y /E /Q /I \"{sourceDir}\\*\" \"{targetDir}\\\" >nul");
-        sb.AppendLine("");
-        sb.AppendLine("echo Starting new version...");
-        sb.AppendLine($"start \"\" \"{exePath}\"");
-        sb.AppendLine("");
-        sb.AppendLine("timeout /t 2 /nobreak >nul");
-        sb.AppendLine("");
-        sb.AppendLine("echo Cleaning up...");
-        sb.AppendLine($"rmdir /S /Q \"{sourceDir}\" >nul 2>&1");
-        if (!string.IsNullOrEmpty(zipPath))
-            sb.AppendLine($"del /F /Q \"{zipPath}\" >nul 2>&1");
-        sb.AppendLine("");
-        sb.AppendLine("del /F /Q \"%~f0\"");
-        sb.AppendLine("");
-
-        return sb.ToString();
     }
 
     public void CancelDownload()

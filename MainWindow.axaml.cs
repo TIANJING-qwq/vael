@@ -76,10 +76,21 @@ public partial class MainWindow : Window
         ApplyScheduleConfig();
 
         // 桌面小组件（延迟到启动动画结束后再显示，避免启动期黑框/无响应）+ 会话恢复
-        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        // ★ 用 DispatcherTimer 而非 Post(Loaded)：静默开机启动时主窗口从不 Show，
+        //   Loaded 优先级的队列不会被泵 → 小组件永远不恢复（旧 bug）
+        var widgetRestoreTimer = new Avalonia.Threading.DispatcherTimer
         {
-            await System.Threading.Tasks.Task.Delay(3000);
-            try { SimpleWidgetWindow.RestoreSession(); } catch { }
+            Interval = TimeSpan.FromSeconds(3),
+        };
+        widgetRestoreTimer.Tick += (_, _) =>
+        {
+            widgetRestoreTimer.Stop();
+            try
+            {
+                SimpleWidgetWindow.RestoreSession();
+                LogService.Log($"小组件会话已恢复（{SimpleWidgetWindow.OpenCount} 个）", "小组件");
+            }
+            catch (Exception ex) { LogService.Log($"小组件恢复失败: {ex.Message}", "小组件"); }
             try { if (DockWindow.ShouldRestore) DockWindow.ShowOrCreate(); } catch { } // Aqua Dock 会话恢复
             try
             {
@@ -89,7 +100,8 @@ public partial class MainWindow : Window
                         new SimpleWidgetWindow.Config { Title = "性能监控" }).Show();
             }
             catch { }
-        }, Avalonia.Threading.DispatcherPriority.Loaded);
+        };
+        widgetRestoreTimer.Start();
         // 退出时兜底保存小组件会话
         Closing += (_, _) => { try { SimpleWidgetWindow.SaveSession(); } catch { } };
 
@@ -467,10 +479,12 @@ public partial class MainWindow : Window
             var version = UpdateService.Instance.LatestVersion ?? "";
             bool autoDownload = ConfigManager.Instance.AutoDownloadUpdate;
             bool autoInstall  = ConfigManager.Instance.AutoInstallUpdate;
+            bool hidden = _isHiddenToTray || !IsVisible;
 
-            if (!autoDownload)
+            // ★ 隐藏运行（托盘/开机自启）时一律全后台：不弹确认框、不拉起主窗口
+            if (!autoDownload && !hidden)
             {
-                // 下载方式=手动：弹窗确认是否下载
+                // 下载方式=手动且窗口可见：弹窗确认是否下载
                 if (_isHiddenToTray || !IsVisible) RestoreMainWindow();
                 var dialog = new UpdateAvailableDialog(version, UpdateService.Instance.GetChangelog());
                 if (!await dialog.ShowDialog<bool>(this))
@@ -481,14 +495,15 @@ public partial class MainWindow : Window
             }
             else
             {
-                PushToast("发现新版本", $"正在自动下载 v{version} …");
+                PushToast("发现新版本", hidden ? $"后台自动更新 v{version} …" : $"正在自动下载 v{version} …");
             }
 
-            bool fullyAuto = autoDownload && autoInstall;
+            bool fullyAuto = hidden || (autoDownload && autoInstall);
             var progress = fullyAuto ? null : new UpdateDownloadDialog();
             if (progress != null) progress.Show(this);
 
-            bool downloaded = await UpdateService.Instance.DownloadAsync();
+            // ★ 全后台自动更新：/VERYSILENT 无任何窗口；装完按原启动模式重启（静默启动不弹窗）
+            bool downloaded = await UpdateService.Instance.DownloadAsync(silentInstall: fullyAuto);
             if (progress != null) { try { await progress.CloseWithAnimationAsync(); } catch { } }
 
             if (!downloaded)
@@ -497,9 +512,12 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (autoInstall)
+            // Windows：安装器已在前台跑起来了，进程马上退出（DownloadAsync 内部 Environment.Exit）
+            if (OperatingSystem.IsWindows()) return;
+
+            if (autoInstall || hidden)
             {
-                // 安装方式=自动：静默替换并重启（右下角进度弹窗）
+                // 隐藏运行/自动安装：直接装（带右下角进度）
                 await InstallWithProgressAsync();
             }
             else
@@ -1036,7 +1054,14 @@ public partial class MainWindow : Window
 
         try
         {
-            await UpdateService.Instance.InstallAsync(progress);
+            var ok = await UpdateService.Instance.InstallAsync(progress);
+            if (!ok)
+            {
+                // ★ 旧 bug：InstallAsync 返回 false（如 Windows 无 pending 更新）时
+                //   进度遮罩永远不关，界面卡死在"正在安装更新"
+                CloseUpdateProgress();
+                PushToast("更新", UpdateService.Instance.LastError ?? "没有可安装的更新");
+            }
         }
         catch
         {

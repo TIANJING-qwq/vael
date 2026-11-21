@@ -68,7 +68,9 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
-          & $iscc installer.iss
+          # ★ 版本号必须传进安装器，否则安装/卸载列表里永远显示默认 0.5.0
+          $ver = "${{ github.ref_name }}".TrimStart('v')
+          & $iscc "/DAppVersion=$ver" installer.iss
           Move-Item "publish\installer\*.exe" "Vael_Setup_${{ github.ref_name }}.exe"
           ls *.exe
 
