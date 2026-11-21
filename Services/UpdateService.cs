@@ -54,6 +54,16 @@ public sealed class UpdateService
     public bool HasPendingUpdate =>
         Directory.Exists(PendingDir) && File.Exists(PendingExePath);
 
+    /// <summary>清理旧版 ZIP 方案遗留的待安装包（Windows 已改用安装器）</summary>
+    public void CleanupPendingUpdate()
+    {
+        try
+        {
+            if (Directory.Exists(PendingDir)) Directory.Delete(PendingDir, true);
+        }
+        catch { }
+    }
+
     /// <summary>待安装更新的主程序路径（Windows 为 SBtools.exe，其它平台无扩展名）。</summary>
     private static string PendingExeName => OperatingSystem.IsWindows() ? "SBtools.exe" : "SBtools";
 

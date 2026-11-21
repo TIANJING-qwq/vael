@@ -174,29 +174,11 @@ public partial class MainWindow : Window
             {
                 await Task.Delay(1500);
 
-                // ★ 若有上次下载好但未安装的更新，先提示安装
+                // ★ 旧版遗留的"已下载待安装"（ZIP 替换方案已废弃）：静默清理，不再弹窗
                 if (UpdateService.Instance.HasPendingUpdate)
                 {
-                    Dispatcher.UIThread.Post(async () =>
-                    {
-                        try
-                        {
-                            if (_isHiddenToTray || !IsVisible)
-                                RestoreMainWindow();
-
-                            var dlg = new UpdateAvailableDialog(
-                                "已下载", "检测到上次已下载好的更新，是否立即安装？",
-                                "安装更新", "立即安装");
-
-                            if (await dlg.ShowDialog<bool>(this))
-                                await InstallWithProgressAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Log($"待安装更新提示异常: {ex.Message}", "更新");
-                        }
-                    });
-                    return;
+                    UpdateService.Instance.CleanupPendingUpdate();
+                    LogService.Log("已清理旧版遗留的待安装更新包", "更新");
                 }
 
                 // ★ 启动时检查一次，走后台自动更新流程
