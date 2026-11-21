@@ -351,10 +351,20 @@ public class DockWindow : Window
         }
         catch { }
 
-        _card.Background = new SolidColorBrush(Color.Parse(m.CardHex));
-        _card.BorderBrush = Brush.Parse("#26FFFFFF");
+        _card.Background = m.Gloss
+            ? null // 真折射液态玻璃：底由 SKSL 着色器绘制
+            : new SolidColorBrush(Color.Parse(m.CardHex));
+        _card.BorderBrush = Brush.Parse(m.Gloss ? "#59FFFFFF" : "#26FFFFFF");
         _card.BorderThickness = new Thickness(1);
-        _card.Child = _strip;
+        _card.Child = m.Gloss
+            ? new Controls.LiquidGlass
+            {
+                CornerRadius = 18,
+                Strength = 0, // 0 = 按 Dock 尺寸自动
+                TintOpacity = 0.10,
+                Child = _strip,
+            }
+            : _strip;
     }
 
     [DllImport("dwmapi.dll")]

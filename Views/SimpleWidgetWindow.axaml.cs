@@ -45,6 +45,7 @@ public partial class SimpleWidgetWindow : Window
     {
         new("云母", "#40282828", 1),
         new("亚克力", "#48282828", 2),
+        new("液态玻璃", "#28282828", 2, Gloss: true), // 真折射：采样壁纸 + SKSL 边缘弯折
     };
 
     /// <summary>材质切换广播（DockWindow 等非 SimpleWidgetWindow 窗口跟随）</summary>
@@ -178,12 +179,14 @@ public partial class SimpleWidgetWindow : Window
                 break;
         }
         panel.Children.Add(_sub);
-        // 液态玻璃：背景抓图层 + 可读性纱层 + 内容层
+        // 背景层 + 可读性纱层 + 真折射玻璃层 + 内容层
         _backdrop = new Image { Stretch = Stretch.Fill, Opacity = 0 };
         _scrim = new Border { Opacity = 0 }; // 压暗纱层，保证文字对比度
+        _liquid = new Controls.LiquidGlass { CornerRadius = 12, IsVisible = false };
         var grid = new Grid();
         grid.Children.Add(_backdrop);
         grid.Children.Add(_scrim);
+        grid.Children.Add(_liquid);
         grid.Children.Add(panel);
         _card.Child = grid;
         Content = _card;
@@ -271,10 +274,18 @@ public partial class SimpleWidgetWindow : Window
         }
         catch { }
 
-        _card.Background = new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
-        _card.BorderBrush = Brush.Parse("#26FFFFFF");
+        _card.Background = _mat.Gloss
+            ? null // 真折射液态玻璃：底由 SKSL 着色器绘制
+            : new SolidColorBrush(Avalonia.Media.Color.Parse(_mat.CardHex));
+        _card.BorderBrush = Brush.Parse(_mat.Gloss ? "#59FFFFFF" : "#26FFFFFF");
         _card.BorderThickness = new Avalonia.Thickness(1);
         if (_scrim != null) _scrim.Background = Brushes.Transparent;
+        if (_liquid != null)
+        {
+            _liquid.IsVisible = _mat.Gloss;
+            _liquid.Strength = 0; // 0 = 按控件尺寸自动换算
+            _liquid.TintOpacity = 0.10;
+        }
 
         // 字色按材质亮度反色
         SetForegrounds(_card, _mat.ForeBrush);
@@ -461,6 +472,7 @@ public partial class SimpleWidgetWindow : Window
     // ===== 液态玻璃：实时抓取窗口背后屏幕 → 模糊 → 贴回（无方框、真演算） =====
     private Image? _backdrop;
     private Border? _scrim;
+    private Controls.LiquidGlass? _liquid;
     private System.Timers.Timer? _liquidTimer;
 
     private void StartLiquid()
