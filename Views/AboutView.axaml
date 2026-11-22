@@ -33,7 +33,7 @@
         <StackPanel Margin="28,22" MaxWidth="640" Spacing="16" HorizontalAlignment="Stretch">
 
             <!-- ============ 渐变横幅 ============ -->
-            <Border CornerRadius="18" ClipToBounds="True" Height="196">
+            <Border Name="BannerCard" Opacity="0" CornerRadius="18" ClipToBounds="True" Height="196">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                         <GradientStop Color="#0067C0" Offset="0"/>
@@ -99,14 +99,14 @@
                 </Grid>
             </Border>
 
-            <!-- ============ 元信息条 ============ -->
-            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+            <!-- ============ 元信息条（整条浮入，含分隔点） ============ -->
+            <StackPanel Name="MetaStrip" Opacity="0" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <TextBlock Name="LineBuild" Text="基于 C# / .NET 8 + Avalonia UI 构建"
-                           FontSize="12" Opacity="0"/>
+                           FontSize="12" Opacity="0.7"/>
                 <TextBlock Text="·" FontSize="12" Opacity="0.35"/>
-                <TextBlock Name="LineAuthor" Text="Vael 项目组制作" FontSize="12" Opacity="0"/>
+                <TextBlock Name="LineAuthor" Text="Vael 项目组制作" FontSize="12"/>
                 <TextBlock Text="·" FontSize="12" Opacity="0.35"/>
-                <TextBlock Name="LineTeam" Text="tianjing &amp; deepseek" FontSize="12" Opacity="0"/>
+                <TextBlock Name="LineTeam" Text="tianjing &amp; deepseek" FontSize="12" Opacity="0.6"/>
             </StackPanel>
 
             <!-- ============ 制作人员 ============ -->

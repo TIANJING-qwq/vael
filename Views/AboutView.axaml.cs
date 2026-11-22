@@ -25,14 +25,12 @@ public partial class AboutView : UserControl
 
     private readonly Dictionary<string, double> _targetOpacity = new()
     {
+        ["BannerCard"]        = 1.0,
         ["AppIcon"]           = 1.0,
         ["ChineseName"]       = 0.85,
-        ["Divider"]           = 1.0,
-        ["LineAuthor"]        = 1.0,
-        ["LineTeam"]          = 0.6,
-        ["LineBuild"]         = 0.7,
         ["LineVersion"]       = 0.5,
         ["LineDesc"]          = 0.6,
+        ["MetaStrip"]         = 1.0,
         ["CreditsSection"]    = 1.0,
         ["ButtonRow"]         = 1.0,
         ["UpdateStatusText"]  = 0.6,
@@ -147,11 +145,12 @@ public partial class AboutView : UserControl
         // ★ 加载制作人员头像（容错，失败不崩）
         LoadCreditImages();
 
+        // ★ 浮入目标以"容器"为单位：横幅整卡、元信息整条、制作人员卡、按钮行
         _fadeTargets.AddRange(new Control[]
         {
-            AppIcon, ChineseName, Divider,
-            LineAuthor, LineTeam, LineBuild, LineVersion, LineDesc,
-            CreditsSection, ButtonRow
+            BannerCard, MetaStrip, CreditsSection, ButtonRow, UpdateStatusText,
+            // 横幅内部的文字（在整卡浮入后错峰出现）
+            AppIcon, ChineseName, LineVersion, LineDesc,
         });
 
         foreach (var t in _fadeTargets)
@@ -293,10 +292,11 @@ public partial class AboutView : UserControl
     // ============================================================
     private async Task PlayAnimationAsync()
     {
-        Fade(AppIcon);
-        await Task.Delay(400);
+        // 1. 渐变横幅整卡浮入（光斑/图标环/胶囊一起动，不再瞬现）
+        Fade(BannerCard);
+        await Task.Delay(360);
 
-        // 标题字母从左往右依次上浮
+        // 2. 标题字母从左往右依次上浮
         for (int i = 0; i < 4; i++)
         {
             var letter = this.FindControl<TextBlock>($"Letter{i}");
@@ -306,17 +306,18 @@ public partial class AboutView : UserControl
             await Task.Delay(90);
         }
 
+        // 3. 横幅内其余文字错峰
         Fade(ChineseName);
-        await Task.Delay(200);
+        await Task.Delay(120);
+        Fade(LineDesc);
+        Fade(AppIcon);
+        await Task.Delay(120);
+        Fade(LineVersion);
 
+        // 4. 元信息条（含「·」分隔点）→ 制作人员卡 → 按钮行 → 状态行
         foreach (var target in new Control[]
                  {
-                     Divider,
-                     LineAuthor,
-                     LineTeam,
-                     LineBuild,
-                     LineVersion,
-                     LineDesc,
+                     MetaStrip,
                      CreditsSection,
                      ButtonRow,
                      UpdateStatusText
