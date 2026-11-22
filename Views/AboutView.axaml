@@ -85,7 +85,7 @@
                                     <TextBlock Text="测试版" FontSize="11" Foreground="Black" FontWeight="SemiBold"/>
                                 </Border>
                                 <Border Classes="pill">
-                                    <TextBlock Name="LineVersion" Text="版本 0.5.8" FontSize="11" Foreground="White" Opacity="0"/>
+                                    <TextBlock Name="LineVersion" Text="版本 0.5.9" FontSize="11" Foreground="White" Opacity="0"/>
                                 </Border>
                                 <Border Classes="pill">
                                     <TextBlock Text="BSD-3 开源" FontSize="11" Foreground="White"/>

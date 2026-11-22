@@ -63,7 +63,7 @@
                         <TextBlock x:Name="UpdateCardTitle" Text="本次更新" FontSize="16" FontWeight="SemiBold" />
                         <TextBlock x:Name="UpdateCardBody"
                                    FontSize="13" Opacity="0.75" TextWrapping="Wrap"
-                                   Text="• 更新器：下载后启动带进度条的更新器，装完自动重启程序&#10;• 版本日志跟随 GitHub Releases（更新页 + 主页本次更新卡片）&#10;• 右下角「早期测试版本」水印 · 主页测试版徽章" />
+                                   Text="• 修复开机自启小组件不恢复 · 触摸屏适配&#10;• 液态玻璃真折射材质回归（小组件 + Dock）&#10;• 自动更新全后台大修 · 杀软误报缓解" />
                         <TextBlock Text="完整版本日志见「更新」页"
                                    FontSize="11" Opacity="0.45" />
                     </StackPanel>

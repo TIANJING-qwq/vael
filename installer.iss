@@ -1,6 +1,6 @@
 ; 版本号：CI 传 /DAppVersion=x.y.z；本地构建默认值
 #ifndef AppVersion
-  #define AppVersion "0.5.0"
+  #define AppVersion "0.5.9"
 #endif
 
 [Setup]
